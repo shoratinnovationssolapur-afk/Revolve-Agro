@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/welcome_screen.dart'; // This connects your files
+import 'screens/welcome_screen.dart';
 
 void main() {
   runApp(const RevolveAgroApp());
@@ -14,7 +14,11 @@ class RevolveAgroApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Revolve Agro',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        // Matching your website's agricultural green
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2E7D32),
+          primary: const Color(0xFF2E7D32),
+        ),
         useMaterial3: true,
       ),
       home: const WelcomeScreen(),

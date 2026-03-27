@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'role_selection_screen.dart';
+import 'product_list.dart'; // Ensure this matches the filename for the products scraper
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -31,6 +32,8 @@ class WelcomeScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 16, color: Colors.teal, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 50),
+
+              // PRIMARY BUTTON: Standard flow to Role Selection
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -42,8 +45,29 @@ class WelcomeScreen extends StatelessWidget {
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text("Next >>"),
+                child: const Text("Next >>", style: TextStyle(fontSize: 18)),
+              ),
+
+              const SizedBox(height: 15),
+
+              // NEW SECONDARY BUTTON: Direct access to Products Page (The Asynchronous Task)
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+                  );
+                },
+                icon: const Icon(Icons.shopping_bag_outlined),
+                label: const Text("Browse Products Directly"),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.green,
+                  side: const BorderSide(color: Colors.green),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
               ),
             ],
           ),
