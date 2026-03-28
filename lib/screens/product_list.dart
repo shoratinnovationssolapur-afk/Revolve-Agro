@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as parser;
 import 'package:html/dom.dart' as dom;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'payment_page.dart';
 import 'product_details_page.dart'; // Ensure you have created this file
 
 class Product {
@@ -26,6 +29,7 @@ class RevolveAgroProducts extends StatefulWidget {
 }
 
 class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
+
   Future<List<Product>> fetchProducts() async {
     const url = 'https://revolveagro.com';
     try {
@@ -51,6 +55,7 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,11 +65,21 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
         backgroundColor: Colors.green[800],
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+      // --- ADDED FLOATING ACTION BUTTON ---
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openCart(context),
+        backgroundColor: const Color(0xFFF2991E), // Match your "Pay Now" orange
+        icon: const Icon(Icons.shopping_cart_checkout, color: Colors.white),
+        label: const Text("View Cart", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        elevation: 8,
+      ),
+
       body: FutureBuilder<List<Product>>(
         future: fetchProducts(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.green));
+            return const Center(
+                child: CircularProgressIndicator(color: Colors.green));
           } else if (snapshot.hasError) {
             return Center(
               child: Padding(
@@ -80,25 +95,25 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
               itemBuilder: (context, index) {
                 final product = products[index];
 
-                // Wrap in InkWell to make it clickable
                 return InkWell(
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProductDetailsPage(product: product),
+                        builder: (context) =>
+                            ProductDetailsPage(product: product),
                       ),
                     );
                   },
                   child: Card(
                     elevation: 3,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
                     margin: const EdgeInsets.only(bottom: 16),
-                    clipBehavior: Clip.antiAlias, // Ensures image follows card curves
+                    clipBehavior: Clip.antiAlias,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Hero Animation for the image
                         Hero(
                           tag: product.name,
                           child: Image.network(
@@ -106,43 +121,11 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                             height: 220,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              height: 220,
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-                            ),
                           ),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                  product.name,
-                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green[900])
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                  product.details,
-                                  style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w600, fontSize: 14)
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                product.description,
-                                maxLines: 2, // Keeps the list tidy
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 13, color: Colors.black54),
-                              ),
-                              const SizedBox(height: 12),
-                              const Row(
-                                children: [
-                                  Text("View Details", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-                                  Icon(Icons.chevron_right, color: Colors.blue, size: 18),
-                                ],
-                              )
-                            ],
-                          ),
+                          child: Text(product.name),
                         ),
                       ],
                     ),
@@ -154,5 +137,67 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
         },
       ),
     );
+  }
+
+// --- LOGIC TO OPEN CART DIRECTLY ---
+  Future<void> _openCart(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login to view your cart")),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) =>
+      const Center(child: CircularProgressIndicator(color: Colors.orange)),
+    );
+
+    try {
+      final cartSnapshot = await FirebaseFirestore.instance
+          .collection('cart')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+
+      Navigator.pop(context);
+
+      if (cartSnapshot.docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Your cart is empty")),
+        );
+        return;
+      }
+
+      List<Map<String, dynamic>> items = [];
+      int total = 0;
+
+      for (var doc in cartSnapshot.docs) {
+        items.add({
+          'productName': doc['productName'],
+          'quantity': doc['quantity'],
+        });
+        total += (doc['totalPrice'] as num).toInt();
+      }
+
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentPage(
+              cartItems: items,
+              totalAmount: total,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error fetching cart: $e")),
+      );
+    }
   }
 }
