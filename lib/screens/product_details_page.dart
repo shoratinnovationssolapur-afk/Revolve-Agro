@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart'; // 1. Add this
-import 'package:firebase_auth/firebase_auth.dart';    // 2. Add this
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'product_list.dart';
-import 'payment_page.dart'; // 1. Import your new PaymentPage file
+import 'payment_page.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final Product product;
@@ -15,7 +15,7 @@ class ProductDetailsPage extends StatefulWidget {
 
 class _ProductDetailsPageState extends State<ProductDetailsPage> {
   int quantity = 1;
-  final int unitPrice = 1500; // Fixed price as per your design
+  final int unitPrice = 1500;
 
   Future<void> _addToCart() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -48,27 +48,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               label: 'View Cart',
               textColor: Colors.white,
               onPressed: () async {
-                // 1. Actually fetch the data from Firestore
                 final cartSnapshot = await FirebaseFirestore.instance
                     .collection('cart')
                     .where('userId', isEqualTo: user.uid)
                     .get();
 
-                // 2. Define the variables that were missing
                 List<Map<String, dynamic>> items = [];
                 int total = 0;
 
-                // 3. Map the data and calculate the total
                 for (var doc in cartSnapshot.docs) {
                   items.add({
                     'productName': doc['productName'],
                     'quantity': doc['quantity'],
                   });
-                  // Calculate the total price from all cart items
                   total += (doc['totalPrice'] as num).toInt();
                 }
 
-                // 4. Navigate to PaymentPage with the correct data
                 if (mounted) {
                   Navigator.push(
                     context,
@@ -92,6 +87,40 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     }
   }
 
+  void _showZoomedImage(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Center(
+                child: Image.network(
+                  widget.product.imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     int totalAmount = unitPrice * quantity;
@@ -100,17 +129,20 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Background Image
+          // Background Image with Zoom
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: MediaQuery.of(context).size.height * 0.55,
-            child: Hero(
-              tag: widget.product.name,
-              child: Image.network(
-                widget.product.imageUrl,
-                fit: BoxFit.contain,
+            child: GestureDetector(
+              onTap: () => _showZoomedImage(context),
+              child: Hero(
+                tag: widget.product.name,
+                child: Image.network(
+                  widget.product.imageUrl,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -148,12 +180,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                     widget.product.details,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    widget.product.description,
-                    style: const TextStyle(fontSize: 18, color: Colors.black87, height: 1.4),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Text(
+                        widget.product.description,
+                        style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.4),
+                      ),
+                    ),
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 10),
 
                   // Quantity and Price Row
                   Row(
@@ -178,7 +214,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
                   // Action Buttons
                   Row(
@@ -188,14 +224,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           "Buy Now",
                           const Color(0xFF4CAF50),
                               () {
-                            // 2. Navigation to PaymentPage
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => PaymentPage(
                                   cartItems: [{
                                     'productName': widget.product.name,
-                                    'quantity': quantity, // The current quantity on screen
+                                    'quantity': quantity,
                                   }],
                                   totalAmount: totalAmount,
                                 ),
@@ -209,7 +244,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         child: _actionBtn(
                             "Add to Cart",
                             const Color(0xFFB5A144),
-                            _addToCart // Pass the function here
+                            _addToCart
                         ),
                       ),
                     ],

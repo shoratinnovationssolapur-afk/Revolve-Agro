@@ -11,12 +11,25 @@
 //}
 
 // Keep your existing allprojects and buildDir logic below...
+// ... (Keep your plugins and buildDir logic at the top)
+
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
+
+    // ADD THIS BLOCK TO FIX THE VERSION ERRORS
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.browser:browser:1.8.0")
+            force("androidx.core:core:1.13.1")
+            force("androidx.core:core-ktx:1.13.1")
+        }
+    }
 }
+
+// ... (Keep the rest of your buildDir and tasks logic below)
 
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
