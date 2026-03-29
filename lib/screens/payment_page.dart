@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'PaymentSuccessScreen.dart';
 
 class PaymentPage extends StatefulWidget { // 1. Changed to StatefulWidget to handle UI updates after deletion
   final List<Map<String, dynamic>> cartItems;
@@ -68,14 +69,11 @@ class _PaymentPageState extends State<PaymentPage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    if (currentItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Your cart is empty!")),
-      );
-      return;
-    }
-
     try {
+      // 1. Fetch User Name from Firestore 'users' collection
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      String userName = userDoc.data()?['name'] ?? "Unknown User";
+
       final cartSnapshot = await FirebaseFirestore.instance
           .collection('cart')
           .where('userId', isEqualTo: user.uid)
@@ -84,8 +82,10 @@ class _PaymentPageState extends State<PaymentPage> {
       WriteBatch batch = FirebaseFirestore.instance.batch();
       DocumentReference orderRef = FirebaseFirestore.instance.collection('orders').doc();
 
+      // 2. Add 'userName' to the order document
       batch.set(orderRef, {
         'userId': user.uid,
+        'userName': userName, // CRITICAL for Admin side filtering
         'products': currentItems,
         'totalAmount': currentTotal,
         'status': 'Processing',
@@ -98,11 +98,16 @@ class _PaymentPageState extends State<PaymentPage> {
       }
 
       await batch.commit();
-      if (mounted) _showSuccessDialog(context);
+
+      if (context.mounted) {
+        // 3. Navigate to the Success Screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PaymentSuccessScreen()),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Payment failed: $e"), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 

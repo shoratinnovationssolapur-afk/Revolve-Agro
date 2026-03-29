@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'marketplace_screen.dart';
 import 'product_list.dart';
+import 'AdminOrdersPage.dart';
 
 class AuthScreen extends StatefulWidget {
   final String role; // This must be here to accept "User" or "Admin"
@@ -33,12 +34,27 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => isLoading = true);
     try {
       if (isLogin) {
-        // LOGIN LOGIC
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-      } else {
+
+        // Fetch the actual role from the database to be safe
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        String actualRole = userDoc.data()?['role'] ?? "User";
+
+        if (mounted) {
+          if (actualRole == "Admin") {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminOrdersPage()));
+          } else {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => RevolveAgroProducts()));
+          }
+        }
+      }else {
         // SIGNUP LOGIC
         UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
@@ -62,11 +78,22 @@ class _AuthScreenState extends State<AuthScreen> {
       }
 
       // After success (Login OR Signup), move to the next screen
+// After success (Login OR Signup), move to the next screen
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
-        );
+        // 1. If the person logged in/signed up as Admin, go to Admin Page
+        if (widget.role == "Admin") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+          );
+        }
+        // 2. Otherwise, they are a User/Farmer, so go to the Products list
+        else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+          );
+        }
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? "Auth Error")));
