@@ -38,6 +38,8 @@ class AppLocalizations {
       'trusted_products': 'Trusted Products',
       'easy_checkout': 'Easy Checkout',
       'continue': 'Continue',
+      'loading_app': 'Loading App...',
+      'splash_tagline': 'Smart farming starts here',
       'browse_products_directly': 'Browse Products Directly',
       'choose_experience_title': 'Choose your\nexperience',
       'choose_experience_subtitle':
@@ -48,6 +50,7 @@ class AppLocalizations {
       'admin_login_subtitle': 'Track incoming orders, customer addresses, and overall order activity.',
       'multilingual_support':
           'Available for multilingual agriculture support and faster team coordination.',
+      'startup_hint': 'We are preparing your account, products, and settings in the background.',
       'admin_workspace': 'Admin Workspace',
       'farmer_workspace': 'Farmer Workspace',
       'welcome_back': 'Welcome back',

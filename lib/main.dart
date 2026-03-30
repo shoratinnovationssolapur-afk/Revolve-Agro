@@ -1,13 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_localizations.dart';
 import 'firebase_options.dart';
-import 'screens/AdminOrdersPage.dart';
-import 'screens/product_list.dart';
 import 'screens/welcome_screen.dart';
 
 void main() {
@@ -150,6 +146,7 @@ class _AppBootstrap extends StatefulWidget {
 
 class _AppBootstrapState extends State<_AppBootstrap> {
   late final Future<FirebaseApp> _initialization;
+  late final Future<void> _introDelay;
 
   @override
   void initState() {
@@ -157,66 +154,40 @@ class _AppBootstrapState extends State<_AppBootstrap> {
     _initialization = Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    _introDelay = Future<void>.delayed(const Duration(milliseconds: 1300));
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<FirebaseApp>(
-      future: _initialization,
+    return FutureBuilder<void>(
+      future: _introDelay,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const _StartupScreen();
+          return const _IntroSplashScreen();
         }
 
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'App startup failed: ${snapshot.error}',
-                  textAlign: TextAlign.center,
+        return FutureBuilder<FirebaseApp>(
+          future: _initialization,
+          builder: (context, firebaseSnapshot) {
+            if (firebaseSnapshot.hasError) {
+              return Scaffold(
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'App startup failed: ${firebaseSnapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        }
-
-        return StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, authSnapshot) {
-            if (authSnapshot.hasData) {
-              return _RoleBasedHome(user: authSnapshot.data!);
+              );
             }
-            return const WelcomeScreen();
+
+            return WelcomeScreen(
+              firebaseReady: firebaseSnapshot.connectionState == ConnectionState.done,
+            );
           },
         );
-      },
-    );
-  }
-}
-
-class _RoleBasedHome extends StatelessWidget {
-  final User user;
-
-  const _RoleBasedHome({required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const _StartupScreen();
-        }
-
-        final role = snapshot.data?.data()?['role']?.toString() ?? 'User';
-
-        if (role == 'Admin') {
-          return const AdminOrdersPage();
-        }
-
-        return RevolveAgroProducts();
       },
     );
   }
@@ -273,6 +244,120 @@ class _StartupScreen extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IntroSplashScreen extends StatefulWidget {
+  const _IntroSplashScreen();
+
+  @override
+  State<_IntroSplashScreen> createState() => _IntroSplashScreenState();
+}
+
+class _IntroSplashScreenState extends State<_IntroSplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 950),
+    )..forward();
+    _fade = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _scale = Tween<double>(begin: 0.78, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE6F2D8),
+              Color(0xFFF7F3E8),
+              Color(0xFFFFFBF4),
+            ],
+          ),
+        ),
+        child: Center(
+          child: FadeTransition(
+            opacity: _fade,
+            child: ScaleTransition(
+              scale: _scale,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 112,
+                    width: 112,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF2F6A3E), Color(0xFF79B45E)],
+                      ),
+                      borderRadius: BorderRadius.circular(34),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0x332F6A3E),
+                          blurRadius: 30,
+                          offset: const Offset(0, 18),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.agriculture_rounded,
+                      color: Colors.white,
+                      size: 52,
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  Text(
+                    context.l10n.text('app_name'),
+                    style: const TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF183020),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    context.l10n.text('splash_tagline'),
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
