@@ -11,6 +11,7 @@ import '../widgets/language_selector.dart';
 import 'auth_screen.dart';
 import 'payment_page.dart';
 import 'product_details_page.dart';
+import 'welcome_screen.dart';
 
 class Product {
   final String name;
@@ -185,7 +186,15 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                           Row(
                             children: [
                               IconButton.filledTonal(
-                                onPressed: () => Navigator.maybePop(context),
+                                onPressed: () {
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const WelcomeScreen(preferredRole: 'User'),
+                                    ),
+                                    (route) => false,
+                                  );
+                                },
                                 icon: const Icon(Icons.arrow_back_rounded),
                               ),
                               const Spacer(),

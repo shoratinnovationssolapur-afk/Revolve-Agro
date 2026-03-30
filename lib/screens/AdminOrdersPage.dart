@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
 import 'auth_screen.dart';
+import 'welcome_screen.dart';
 
 class AdminOrdersPage extends StatelessWidget {
   const AdminOrdersPage({super.key});
@@ -59,7 +60,15 @@ class AdminOrdersPage extends StatelessWidget {
                       Row(
                         children: [
                           IconButton.filledTonal(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const WelcomeScreen(preferredRole: 'Admin'),
+                                ),
+                                (route) => false,
+                              );
+                            },
                             icon: const Icon(Icons.arrow_back_rounded),
                           ),
                           const Spacer(),

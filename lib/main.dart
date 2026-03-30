@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_localizations.dart';
 import 'firebase_options.dart';
+import 'screens/AdminOrdersPage.dart';
 import 'screens/product_list.dart';
 import 'screens/welcome_screen.dart';
 
@@ -184,11 +186,37 @@ class _AppBootstrapState extends State<_AppBootstrap> {
           stream: FirebaseAuth.instance.authStateChanges(),
           builder: (context, authSnapshot) {
             if (authSnapshot.hasData) {
-              return RevolveAgroProducts();
+              return _RoleBasedHome(user: authSnapshot.data!);
             }
             return const WelcomeScreen();
           },
         );
+      },
+    );
+  }
+}
+
+class _RoleBasedHome extends StatelessWidget {
+  final User user;
+
+  const _RoleBasedHome({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _StartupScreen();
+        }
+
+        final role = snapshot.data?.data()?['role']?.toString() ?? 'User';
+
+        if (role == 'Admin') {
+          return const AdminOrdersPage();
+        }
+
+        return RevolveAgroProducts();
       },
     );
   }

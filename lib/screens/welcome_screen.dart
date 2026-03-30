@@ -1,12 +1,70 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
+import 'AdminOrdersPage.dart';
+import 'auth_screen.dart';
 import 'product_list.dart';
 import 'role_selection_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+  final String? preferredRole;
+
+  const WelcomeScreen({super.key, this.preferredRole});
+
+  Future<void> _handleContinue(BuildContext context) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) {
+      if (preferredRole == 'Admin') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthScreen(role: 'Admin')),
+        );
+        return;
+      }
+
+      if (preferredRole == 'User') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthScreen(role: 'User')),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+      );
+      return;
+    }
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+
+    final role = userDoc.data()?['role']?.toString() ?? 'User';
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (role == 'Admin') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,12 +184,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 26),
                           ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-                              );
-                            },
+                            onPressed: () => _handleContinue(context),
                             icon: const Icon(Icons.arrow_forward_rounded),
                             label: Text(l10n.text('continue')),
                           ),
