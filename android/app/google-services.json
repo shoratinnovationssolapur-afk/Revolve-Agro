@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1053670723199",
+    "project_id": "revolveagro-9e98e",
+    "storage_bucket": "revolveagro-9e98e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053670723199:android:91ad0d114639539f0d794a",
+        "android_client_info": {
+          "package_name": "com.example.revolveagro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1053670723199-i069l1kols7m3fvigel77qfc6tpifpns.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6Gh8BjVfdA5nRHCLxsKecl6s5w_l5xqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1053670723199-i069l1kols7m3fvigel77qfc6tpifpns.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1053670723199-0k8hngr4jfrgorlrng5e54bldkml0e59.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.revolveagro"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

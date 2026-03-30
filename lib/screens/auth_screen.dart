@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'marketplace_screen.dart'; // Ensure this file exists in your lib/screens folder
+import 'marketplace_screen.dart';
+import 'product_list.dart';
+import 'AdminOrdersPage.dart';
 
 class AuthScreen extends StatefulWidget {
-  final String role; // "Farmer" or "Dealer" [cite: 107, 114]
+  final String role; // This must be here to accept "User" or "Admin"
+
   const AuthScreen({super.key, required this.role});
 
   @override
@@ -11,65 +16,156 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   bool isLogin = true;
+  bool isLoading = false;
+
+  // 1. Controllers to capture user input
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+
+  // 2. The Main Auth Logic
+  Future<void> _handleAuth() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      return;
+    }
+
+    setState(() => isLoading = true);
+    try {
+      if (isLogin) {
+        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Fetch the actual role from the database to be safe
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        String actualRole = userDoc.data()?['role'] ?? "User";
+
+        if (mounted) {
+          if (actualRole == "Admin") {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminOrdersPage()));
+          } else {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => RevolveAgroProducts()));
+          }
+        }
+      }else {
+        // SIGNUP LOGIC
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // CRITICAL: Wait for the document to be created in the 'users' collection
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set({
+          'uid': userCredential.user!.uid,
+          'name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'email': _emailController.text.trim(),
+          'role': widget.role, // "User" or "Admin"
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        print("✅ Firestore document created for ${userCredential.user!.uid}");
+      }
+
+      // After success (Login OR Signup), move to the next screen
+// After success (Login OR Signup), move to the next screen
+      if (mounted) {
+        // 1. If the person logged in/signed up as Admin, go to Admin Page
+        if (widget.role == "Admin") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+          );
+        }
+        // 2. Otherwise, they are a User/Farmer, so go to the Products list
+        else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+          );
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? "Auth Error")));
+    } catch (e) {
+      // This catches Firestore errors specifically
+      print("❌ Firestore Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Database Error: $e")));
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text("${widget.role} ${isLogin ? 'Login' : 'Sign Up'}")),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(25.0),
-          child: Column(
-            children: [
+      appBar: AppBar(title: Text("${widget.role} ${isLogin ? 'Login' : 'Sign Up'}")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(25.0),
+        child: Column(
+          children: [
             const CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.white,
-            child: Icon(Icons.eco, size: 50, color: Colors.green),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-              "Revolve Agro",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
+              radius: 50,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.eco, size: 50, color: Colors.green),
+            ),
+            const SizedBox(height: 20),
+            const Text("Revolve Agro", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green)),
+            const SizedBox(height: 30),
+
+            // 4. Linked TextFields
+            TextField(
+              controller: _emailController, // Use email as username for Firebase Auth
+              decoration: const InputDecoration(labelText: "Email / User Name", border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 15),
+            if (!isLogin) ...[
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: "Full Name", border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: _phoneController,
+                decoration: const InputDecoration(labelText: "Phone No", border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 15),
+            ],
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 30),
+
+            isLoading
+                ? const CircularProgressIndicator(color: Colors.green)
+                : ElevatedButton(
+              onPressed: _handleAuth,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: Text(isLogin ? "Login →" : "SignUp →"),
+            ),
+            TextButton(
+              onPressed: () => setState(() => isLogin = !isLogin),
+              child: Text(isLogin ? "Don't have account? Register now" : "Already have an account? Login"),
+            ),
+          ],
         ),
-        const SizedBox(height: 30),
-
-        // TextFields based on your UI design [cite: 39, 182]
-        const TextField(decoration: InputDecoration(labelText: "User Name", border: OutlineInputBorder())),
-        if (!isLogin) ...[
-    const SizedBox(height: 15),
-    const TextField(decoration: InputDecoration(labelText: "Phone No", border: OutlineInputBorder())),
-    ],
-    const SizedBox(height: 15),
-    const TextField(
-    obscureText: true,
-    decoration: InputDecoration(labelText: "Password", border: OutlineInputBorder())
-    ),
-
-    const SizedBox(height: 30),
-    ElevatedButton(
-    onPressed: () {
-    // Navigates to the Marketplace after "Login" or "SignUp"
-    Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => const MarketplaceScreen()),
-    );
-    },
-    style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.green,
-    foregroundColor: Colors.white,
-    minimumSize: const Size(double.infinity, 50),
-    ),
-    child: Text(isLogin ? "Login →" : "SignUp →"),
-    ),
-
-    TextButton(
-    onPressed: () => setState(() => isLogin = !isLogin),
-    child: Text(isLogin
-    ? "Don't have account? Register now"
-        : "Already have an account? Login"),
-    ),
-    ],
-    ),
-    ),
+      ),
     );
   }
 }

@@ -1,129 +1,281 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'product_list.dart'; // Import your Product model
+import 'product_list.dart';
+import 'payment_page.dart';
 
-class ProductDetailsPage extends StatelessWidget {
+class ProductDetailsPage extends StatefulWidget {
   final Product product;
 
   const ProductDetailsPage({super.key, required this.product});
 
-  // WhatsApp Buy Logic (Matches your website's WhatsApp 73978 20357)
-  void _buyViaWhatsApp() async {
-    final message = "Hello Revolve Agro, I want to buy ${product.name}.\nDetails: ${product.details}";
-    final url = "https://wa.me/917397820357?text=${Uri.encodeComponent(message)}";
+  @override
+  State<ProductDetailsPage> createState() => _ProductDetailsPageState();
+}
 
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+class _ProductDetailsPageState extends State<ProductDetailsPage> {
+  int quantity = 1;
+  final int unitPrice = 1500;
+
+  Future<void> _addToCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login to add items to cart")),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('cart').add({
+        'userId': user.uid,
+        'productName': widget.product.name,
+        'quantity': quantity,
+        'unitPrice': unitPrice,
+        'totalPrice': unitPrice * quantity,
+        'imageUrl': widget.product.imageUrl,
+        'addedAt': FieldValue.serverTimestamp(),
+        'status': 'in_cart',
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("${widget.product.name} added to cart!"),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'View Cart',
+              textColor: Colors.white,
+              onPressed: () async {
+                final cartSnapshot = await FirebaseFirestore.instance
+                    .collection('cart')
+                    .where('userId', isEqualTo: user.uid)
+                    .get();
+
+                List<Map<String, dynamic>> items = [];
+                int total = 0;
+
+                for (var doc in cartSnapshot.docs) {
+                  items.add({
+                    'productName': doc['productName'],
+                    'quantity': doc['quantity'],
+                  });
+                  total += (doc['totalPrice'] as num).toInt();
+                }
+
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PaymentPage(
+                        cartItems: items,
+                        totalAmount: total,
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to add to cart: $e"), backgroundColor: Colors.red),
+      );
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(product.name),
-        backgroundColor: Colors.green[800],
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  void _showZoomedImage(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
           children: [
-            // Product Image with Hero animation
-            Hero(
-              tag: product.name,
-              child: Image.network(
-                product.imageUrl,
-                width: double.infinity,
-                height: 300,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                    height: 300,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.broken_image, size: 100)
+            InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Center(
+                child: Image.network(
+                  widget.product.imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
                 ),
               ),
             ),
-
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Product Name & Badge
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          product.name,
-                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: Colors.green[100], borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.verified, color: Colors.green),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Technical Details
-                  Text(
-                    product.details,
-                    style: TextStyle(fontSize: 18, color: Colors.green[700], fontWeight: FontWeight.w600),
-                  ),
-                  const Divider(height: 30),
-
-                  // Price Section
-                  const Text("Estimated Price:", style: TextStyle(color: Colors.grey)),
-                  Text(
-                    product.price,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Description
-                  const Text("About this Product:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text(
-                    product.description,
-                    style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 100), // Space for bottom button
-                ],
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
 
-      // Fixed Buy Button at bottom
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))]
-        ),
-        child: ElevatedButton(
-          onPressed: _buyViaWhatsApp,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green[800],
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 55),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+  @override
+  Widget build(BuildContext context) {
+    int totalAmount = unitPrice * quantity;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // Background Image with Zoom
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: MediaQuery.of(context).size.height * 0.55,
+            child: GestureDetector(
+              onTap: () => _showZoomedImage(context),
+              child: Hero(
+                tag: widget.product.name,
+                child: Image.network(
+                  widget.product.imageUrl,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
           ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.shopping_cart),
-              SizedBox(width: 10),
-              Text("BUY NOW / ENQUIRE", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
+
+          // Back Button
+          Positioned(
+            top: 50,
+            left: 20,
+            child: CircleAvatar(
+              backgroundColor: Colors.white.withOpacity(0.8),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
           ),
-        ),
+
+          // Detail Card
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.5,
+              padding: const EdgeInsets.all(30),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(50),
+                  topRight: Radius.circular(50),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.product.details,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Text(
+                        widget.product.description,
+                        style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Quantity and Price Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          _quantityBtn(Icons.add_circle_outline, () => setState(() => quantity++)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(quantity.toString().padLeft(2, '0'),
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          ),
+                          _quantityBtn(Icons.remove_circle_outline, () {
+                            if (quantity > 1) setState(() => quantity--);
+                          }),
+                        ],
+                      ),
+                      Text(
+                        "RS.$totalAmount/=",
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _actionBtn(
+                          "Buy Now",
+                          const Color(0xFF4CAF50),
+                              () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PaymentPage(
+                                  cartItems: [{
+                                    'productName': widget.product.name,
+                                    'quantity': quantity,
+                                  }],
+                                  totalAmount: totalAmount,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: _actionBtn(
+                            "Add to Cart",
+                            const Color(0xFFB5A144),
+                            _addToCart
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _quantityBtn(IconData icon, VoidCallback iconTap) {
+    return IconButton(
+      onPressed: iconTap,
+      icon: Icon(icon, size: 30, color: Colors.black),
+    );
+  }
+
+  Widget _actionBtn(String label, Color color, VoidCallback onTap) {
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     );
   }
 }
