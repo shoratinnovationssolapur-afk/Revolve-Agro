@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'marketplace_screen.dart';
-import 'product_list.dart';
+
+import '../app_localizations.dart';
+import '../widgets/language_selector.dart';
 import 'AdminOrdersPage.dart';
+import 'product_list.dart';
+import 'welcome_screen.dart';
 
 class AuthScreen extends StatefulWidget {
-  final String role; // This must be here to accept "User" or "Admin"
+  final String role;
 
   const AuthScreen({super.key, required this.role});
 
@@ -17,51 +20,104 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool isLogin = true;
   bool isLoading = false;
+  bool obscurePassword = true;
 
-  // 1. Controllers to capture user input
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
 
-  // 2. The Main Auth Logic
+  String _friendlyAuthMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Incorrect email or password.';
+      case 'email-already-in-use':
+        return 'This email is already registered. Please log in instead.';
+      case 'weak-password':
+        return 'Password should be at least 6 characters long.';
+      case 'operation-not-allowed':
+        return 'Email/password sign-in is not enabled in Firebase Auth.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
+      default:
+        return e.message ?? 'Authentication failed. Please try again.';
+    }
+  }
+
+  Future<void> _showValidationPopup(String message) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Incomplete Form'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _goToWelcomeScreen() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+      (route) => false,
+    );
+  }
+
   Future<void> _handleAuth() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+    if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
+      await _showValidationPopup('Please fill in email and password.');
+      return;
+    }
+
+    if (!isLogin &&
+        (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty)) {
+      await _showValidationPopup('Please fill in full name and phone number before signing up.');
       return;
     }
 
     setState(() => isLoading = true);
     try {
       if (isLogin) {
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        // Fetch the actual role from the database to be safe
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
             .get();
 
-        String actualRole = userDoc.data()?['role'] ?? "User";
+        final actualRole = userDoc.data()?['role'] ?? "User";
 
         if (mounted) {
           if (actualRole == "Admin") {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminOrdersPage()));
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+            );
           } else {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => RevolveAgroProducts()));
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+            );
           }
         }
-      }else {
-        // SIGNUP LOGIC
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      } else {
+        final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        // CRITICAL: Wait for the document to be created in the 'users' collection
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
@@ -70,100 +126,310 @@ class _AuthScreenState extends State<AuthScreen> {
           'name': _nameController.text.trim(),
           'phone': _phoneController.text.trim(),
           'email': _emailController.text.trim(),
-          'role': widget.role, // "User" or "Admin"
+          'role': widget.role,
           'createdAt': FieldValue.serverTimestamp(),
         });
 
-        print("✅ Firestore document created for ${userCredential.user!.uid}");
-      }
-
-      // After success (Login OR Signup), move to the next screen
-// After success (Login OR Signup), move to the next screen
-      if (mounted) {
-        // 1. If the person logged in/signed up as Admin, go to Admin Page
-        if (widget.role == "Admin") {
+        if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
-          );
-        }
-        // 2. Otherwise, they are a User/Farmer, so go to the Products list
-        else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+            MaterialPageRoute(
+              builder: (context) =>
+                  widget.role == "Admin" ? const AdminOrdersPage() : RevolveAgroProducts(),
+            ),
           );
         }
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? "Auth Error")));
+      debugPrint('Firebase auth error [${e.code}]: ${e.message}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_friendlyAuthMessage(e))),
+      );
     } catch (e) {
-      // This catches Firestore errors specifically
-      print("❌ Firestore Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Database Error: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Database Error: $e")),
+      );
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isAdmin = widget.role == 'Admin';
+    final accent = isAdmin ? const Color(0xFF8C5B1C) : const Color(0xFF2F6A3E);
+    final l10n = context.l10n;
+
     return Scaffold(
-      appBar: AppBar(title: Text("${widget.role} ${isLogin ? 'Login' : 'Sign Up'}")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(25.0),
-        child: Column(
-          children: [
-            const CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.eco, size: 50, color: Colors.green),
-            ),
-            const SizedBox(height: 20),
-            const Text("Revolve Agro", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green)),
-            const SizedBox(height: 30),
-
-            // 4. Linked TextFields
-            TextField(
-              controller: _emailController, // Use email as username for Firebase Auth
-              decoration: const InputDecoration(labelText: "Email / User Name", border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 15),
-            if (!isLogin) ...[
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: "Full Name", border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: _phoneController,
-                decoration: const InputDecoration(labelText: "Phone No", border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 15),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accent.withOpacity(0.14),
+              const Color(0xFFF7F3E8),
+              const Color(0xFFF5F8EE),
             ],
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder()),
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IconButton.filledTonal(
+                  onPressed: _goToWelcomeScreen,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+                const SizedBox(height: 10),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: LanguageSelector(),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.88),
+                    borderRadius: BorderRadius.circular(34),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        height: 72,
+                        width: 72,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [accent, accent.withOpacity(0.7)],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Icon(
+                          isAdmin ? Icons.admin_panel_settings_rounded : Icons.eco_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isAdmin ? l10n.text('admin_workspace') : l10n.text('user_workspace'),
+                              style: TextStyle(
+                                color: accent,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              isLogin ? l10n.text('welcome_back') : l10n.text('create_your_account'),
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF183020),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(22),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF2EADA),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _modeButton(
+                                  label: l10n.text('login'),
+                                  selected: isLogin,
+                                  accent: accent,
+                                  onTap: () => setState(() => isLogin = true),
+                                ),
+                              ),
+                              Expanded(
+                                child: _modeButton(
+                                  label: l10n.text('sign_up'),
+                                  selected: !isLogin,
+                                  accent: accent,
+                                  onTap: () => setState(() => isLogin = false),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          child: Column(
+                            key: ValueKey(isLogin),
+                            children: [
+                              if (!isLogin) ...[
+                                TextField(
+                                  controller: _nameController,
+                                  decoration: InputDecoration(
+                                    labelText: l10n.text('full_name'),
+                                    prefixIcon: const Icon(Icons.person_outline_rounded),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                TextField(
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  decoration: InputDecoration(
+                                    labelText: l10n.text('phone_number'),
+                                    prefixIcon: const Icon(Icons.phone_outlined),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                              ],
+                              TextField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: InputDecoration(
+                                  labelText: l10n.text('email_address'),
+                                  prefixIcon: const Icon(Icons.alternate_email_rounded),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: _passwordController,
+                                obscureText: obscurePassword,
+                                decoration: InputDecoration(
+                                  labelText: l10n.text('password'),
+                                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                                  suffixIcon: IconButton(
+                                    onPressed: () {
+                                      setState(() => obscurePassword = !obscurePassword);
+                                    },
+                                    icon: Icon(
+                                      obscurePassword
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: accent.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.tips_and_updates_outlined, color: accent),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  isLogin
+                                      ? l10n.text('login_hint')
+                                      : l10n.text('signup_hint'),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade800,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        if (isLoading)
+                          Center(
+                            child: CircularProgressIndicator(color: accent),
+                          )
+                        else
+                          ElevatedButton.icon(
+                            onPressed: _handleAuth,
+                            style: ElevatedButton.styleFrom(backgroundColor: accent),
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            label: Text(
+                              isLogin ? l10n.text('continue_to_dashboard') : l10n.text('create_account'),
+                            ),
+                          ),
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.center,
+                          child: TextButton(
+                            onPressed: () => setState(() => isLogin = !isLogin),
+                            child: Text(
+                              isLogin
+                                  ? l10n.text('dont_have_account')
+                                  : l10n.text('already_have_account'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 30),
+          ),
+        ),
+      ),
+    );
+  }
 
-            isLoading
-                ? const CircularProgressIndicator(color: Colors.green)
-                : ElevatedButton(
-              onPressed: _handleAuth,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: Text(isLogin ? "Login →" : "SignUp →"),
+  Widget _modeButton({
+    required String label,
+    required bool selected,
+    required Color accent,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : const Color(0xFF214B2D),
+              fontWeight: FontWeight.w700,
             ),
-            TextButton(
-              onPressed: () => setState(() => isLogin = !isLogin),
-              child: Text(isLogin ? "Don't have account? Register now" : "Already have an account? Login"),
-            ),
-          ],
+          ),
         ),
       ),
     );

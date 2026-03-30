@@ -1,76 +1,194 @@
 import 'package:flutter/material.dart';
+
+import '../app_localizations.dart';
+import '../widgets/language_selector.dart';
+import 'product_list.dart';
 import 'role_selection_screen.dart';
-import 'product_list.dart'; // Ensure this matches the filename for the products scraper
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
-      body: SafeArea(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE7F1D9),
+              Color(0xFFF7F3E8),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
             children: [
-              const CircleAvatar(
-                radius: 70,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.eco, size: 80, color: Colors.green),
+              Positioned(
+                top: -60,
+                right: -40,
+                child: _glowCircle(const Color(0x55D9952E), 190),
               ),
-              const SizedBox(height: 30),
-              const Text(
-                "Grow smarter with\nOur Revolve Agro",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              Positioned(
+                top: 120,
+                left: -70,
+                child: _glowCircle(const Color(0x443E8A4E), 180),
               ),
-              const SizedBox(height: 10),
-              const Text(
-                "Grow | Better | Crops",
-                style: TextStyle(fontSize: 16, color: Colors.teal, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 50),
-
-              // PRIMARY BUTTON: Standard flow to Role Selection
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text("Next >>", style: TextStyle(fontSize: 18)),
-              ),
-
-              const SizedBox(height: 15),
-
-              // NEW SECONDARY BUTTON: Direct access to Products Page (The Asynchronous Task)
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
-                  );
-                },
-                icon: const Icon(Icons.shopping_bag_outlined),
-                label: const Text("Browse Products Directly"),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.green,
-                  side: const BorderSide(color: Colors.green),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.82),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.eco, color: Color(0xFF2F6A3E)),
+                              const SizedBox(width: 10),
+                              Text(
+                                l10n.text('app_name'),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF214B2D),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        const LanguageSelector(),
+                      ],
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.all(26),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.92),
+                        borderRadius: BorderRadius.circular(34),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 30,
+                            offset: const Offset(0, 18),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 78,
+                            width: 78,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF2F6A3E), Color(0xFF6BAA54)],
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: const Icon(Icons.agriculture, color: Colors.white, size: 38),
+                          ),
+                          const SizedBox(height: 22),
+                          Text(
+                            l10n.text('grow_smarter_title'),
+                            style: TextStyle(
+                              fontSize: 34,
+                              height: 1.08,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF183020),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            l10n.text('grow_smarter_subtitle'),
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.55,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+                          Row(
+                            children: [
+                              _StatPill(label: l10n.text('trusted_products')),
+                              const SizedBox(width: 10),
+                              _StatPill(label: l10n.text('easy_checkout')),
+                            ],
+                          ),
+                          const SizedBox(height: 26),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+                              );
+                            },
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            label: Text(l10n.text('continue')),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+                              );
+                            },
+                            icon: const Icon(Icons.storefront_outlined),
+                            label: Text(l10n.text('browse_products_directly')),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _glowCircle(Color color, double size) {
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+
+  const _StatPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4E5C9),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFF8A5D1A),
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

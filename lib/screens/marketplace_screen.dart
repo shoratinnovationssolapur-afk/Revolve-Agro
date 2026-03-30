@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'fertilizer_guide_screen.dart';
 
 class MarketplaceScreen extends StatelessWidget {
@@ -7,8 +8,6 @@ class MarketplaceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      // Inside MarketplaceScreen Scaffold
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -16,52 +15,97 @@ class MarketplaceScreen extends StatelessWidget {
             MaterialPageRoute(builder: (context) => const FertilizerGuideScreen()),
           );
         },
-        label: const Text("Fertilizer Guide"), // [cite: 146]
-        icon: const Icon(Icons.menu_book),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFF2F6A3E),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.menu_book_outlined),
+        label: const Text("Fertilizer Guide"),
       ),
-      appBar: AppBar(
-        title: const Text("Marketplace"), //
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              "Featured Products", //
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFEAF3DE),
+              Color(0xFFF7F3E8),
+            ],
           ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildProductCard(
-                  name: "REVO RHIZAL", // [cite: 57]
-                  description: "Mycorrhizal Bio Fertilizer (100gm)", // [cite: 59]
-                  price: "Rs.2400/=", // [cite: 60]
-                  imageColor: Colors.green[100]!,
+                const Text(
+                  "Marketplace",
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF183020),
+                  ),
                 ),
-                _buildProductCard(
-                  name: "REVO MICRO MIX", // [cite: 68]
-                  description: "Mix Micronutrient Liquid", // [cite: 69]
-                  price: "Rs.1500/=", // [cite: 70]
-                  imageColor: Colors.blue[100]!,
+                const SizedBox(height: 8),
+                Text(
+                  "Featured crop nutrition and bio-fertilizer solutions for a stronger season.",
+                  style: TextStyle(color: Colors.grey.shade700, height: 1.45),
                 ),
-                _buildProductCard(
-                  name: "REVO POTASH", // [cite: 72]
-                  description: "Potash Derived From Rhodophytes", // [cite: 75]
-                  price: "Rs.800/=", // [cite: 75]
-                  imageColor: Colors.orange[100]!,
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD9952E), Color(0xFFE8B154)],
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.sunny_snowing, color: Colors.white, size: 34),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          "Recommended this week for crop nutrition and root-strength support.",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      _buildProductCard(
+                        name: "REVO RHIZAL",
+                        description: "Mycorrhizal Bio Fertilizer (100gm)",
+                        price: "Rs.2400/=",
+                        imageColor: const Color(0xFFE6F2DD),
+                      ),
+                      _buildProductCard(
+                        name: "REVO MICRO MIX",
+                        description: "Mix Micronutrient Liquid",
+                        price: "Rs.1500/=",
+                        imageColor: const Color(0xFFE2EEF6),
+                      ),
+                      _buildProductCard(
+                        name: "REVO POTASH",
+                        description: "Potash Derived From Rhodophytes",
+                        price: "Rs.800/=",
+                        imageColor: const Color(0xFFF7E5CF),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -72,45 +116,62 @@ class MarketplaceScreen extends StatelessWidget {
     required String price,
     required Color imageColor,
   }) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: imageColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.eco, color: Colors.green),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+              color: imageColor,
+              borderRadius: BorderRadius.circular(22),
             ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text(description, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  const SizedBox(height: 5),
-                  Text(price, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                ],
-              ),
+            child: const Icon(Icons.eco_rounded, color: Color(0xFF2F6A3E), size: 34),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                    color: Color(0xFF183020),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(description, style: const TextStyle(height: 1.4)),
+                const SizedBox(height: 10),
+                Text(
+                  price,
+                  style: const TextStyle(
+                    color: Color(0xFF2F6A3E),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
-            ElevatedButton(
+          ),
+          const SizedBox(width: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF2DF),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: IconButton(
               onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: Colors.yellow), // [cite: 62]
-                shape: const StadiumBorder(),
-              ),
-              child: const Text("SHOP NOW", style: TextStyle(color: Colors.black, fontSize: 10)), // [cite: 62]
+              icon: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF2F6A3E)),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

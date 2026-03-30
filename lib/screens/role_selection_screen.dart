@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../app_localizations.dart';
+import '../widgets/language_selector.dart';
 import 'auth_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
@@ -6,119 +9,190 @@ class RoleSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // Light background for contrast
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch, // Makes children full-width
-            children: [
-              // Branding / Header
-              const Icon(Icons.eco, size: 60, color: Colors.green),
-              const SizedBox(height: 10),
-              const Text(
-                "Choose Your Role",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const Text(
-                "English | Marathi", // Updated to match your site's languages
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-              const SizedBox(height: 50),
-
-              // USER CARD (Farmer/Dealer)
-              _buildRoleCard(
-                context,
-                title: "Login as User",
-                subtitle: "Browse products and get expert advice",
-                icon: Icons.person,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AuthScreen(role: "User")),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ADMIN CARD
-              _buildRoleCard(
-                context,
-                title: "Login as Admin",
-                subtitle: "Manage inventory and enquiries",
-                icon: Icons.admin_panel_settings,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AuthScreen(role: "Admin")),
-                ),
-              ),
-
-              const SizedBox(height: 50),
-              const Text(
-                "We're popular in the agriculture\nmarket globally",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 13),
-              ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF1F5E6),
+              Color(0xFFF7F3E8),
+              Color(0xFFFCEFD9),
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IconButton.filledTonal(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+                const SizedBox(height: 10),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: LanguageSelector(),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  l10n.text('choose_experience_title'),
+                  style: TextStyle(
+                    fontSize: 32,
+                    height: 1.05,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF183020),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  l10n.text('choose_experience_subtitle'),
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.55,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _RoleCard(
+                        title: l10n.text('user_login'),
+                        subtitle: l10n.text('user_login_subtitle'),
+                        icon: Icons.person_outline_rounded,
+                        accent: const Color(0xFF2F6A3E),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AuthScreen(role: "User")),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 18),
+                      _RoleCard(
+                        title: l10n.text('admin_login'),
+                        subtitle: l10n.text('admin_login_subtitle'),
+                        icon: Icons.admin_panel_settings_outlined,
+                        accent: const Color(0xFFD9952E),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AuthScreen(role: "Admin")),
+                          );
+                        },
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.88),
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                l10n.text('multilingual_support'),
+                                style: const TextStyle(height: 1.45),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildRoleCard(BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return InkWell( // Added InkWell for a nice ripple effect when clicking
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20), // Use rounded rects instead of circles
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row( // Changed to Row to use full screen width effectively
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                shape: BoxShape.circle,
+class _RoleCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _RoleCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(30),
+        child: Ink(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.92),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withOpacity(0.12),
+                blurRadius: 28,
+                offset: const Offset(0, 16),
               ),
-              child: Icon(icon, size: 35, color: Colors.green),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                ],
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                height: 64,
+                width: 64,
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(icon, color: accent, size: 32),
               ),
-            ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          ],
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF183020),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Icon(Icons.arrow_forward_rounded, color: Color(0xFF183020)),
+            ],
+          ),
         ),
       ),
     );
