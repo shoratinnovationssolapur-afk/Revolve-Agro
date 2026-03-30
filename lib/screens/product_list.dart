@@ -8,8 +8,8 @@ import 'package:http/http.dart' as http;
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
-import 'auth_screen.dart';
 import 'payment_page.dart';
+import 'profile_page.dart';
 import 'product_details_page.dart';
 import 'welcome_screen.dart';
 
@@ -97,40 +97,6 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
     return _fallbackProducts;
   }
 
-  Future<void> _logout(BuildContext context) async {
-    final l10n = context.l10n;
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.text('logout')),
-        content: Text(l10n.text('logout_confirm')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.text('cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.text('logout')),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldLogout != true) {
-      return;
-    }
-
-    await FirebaseAuth.instance.signOut();
-    if (context.mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const AuthScreen(role: "User")),
-        (route) => false,
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -199,8 +165,15 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                               ),
                               const Spacer(),
                               IconButton.filledTonal(
-                                onPressed: () => _logout(context),
-                                icon: const Icon(Icons.logout_rounded),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ProfilePage(role: 'User'),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.person_outline_rounded),
                               ),
                               const LanguageSelector(),
                             ],

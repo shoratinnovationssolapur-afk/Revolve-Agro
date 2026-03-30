@@ -18,6 +18,11 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  static const String _defaultAdminCode = String.fromEnvironment(
+    'ADMIN_SIGNUP_CODE',
+    defaultValue: 'REVOLVE_ADMIN_2026',
+  );
+
   bool isLogin = true;
   bool isLoading = false;
   bool obscurePassword = true;
@@ -26,6 +31,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _adminCodeController = TextEditingController();
 
   String _friendlyAuthMessage(FirebaseAuthException e) {
     switch (e.code) {
@@ -82,6 +88,18 @@ class _AuthScreenState extends State<AuthScreen> {
         (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty)) {
       await _showValidationPopup('Please fill in full name and phone number before signing up.');
       return;
+    }
+
+    if (!isLogin && widget.role == 'Admin') {
+      if (_adminCodeController.text.trim().isEmpty) {
+        await _showValidationPopup('Please enter the admin code to create an admin account.');
+        return;
+      }
+
+      if (_adminCodeController.text.trim() != _defaultAdminCode) {
+        await _showValidationPopup('Invalid admin code. Only authorized admins can sign up.');
+        return;
+      }
     }
 
     setState(() => isLoading = true);
@@ -162,6 +180,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _passwordController.dispose();
     _phoneController.dispose();
     _nameController.dispose();
+    _adminCodeController.dispose();
     super.dispose();
   }
 
@@ -311,6 +330,17 @@ class _AuthScreenState extends State<AuthScreen> {
                                     prefixIcon: const Icon(Icons.phone_outlined),
                                   ),
                                 ),
+                                if (isAdmin) ...[
+                                  const SizedBox(height: 14),
+                                  TextField(
+                                    controller: _adminCodeController,
+                                    obscureText: true,
+                                    decoration: InputDecoration(
+                                      labelText: l10n.text('admin_code'),
+                                      prefixIcon: const Icon(Icons.security_rounded),
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(height: 14),
                               ],
                               TextField(

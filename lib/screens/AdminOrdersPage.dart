@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
-import 'auth_screen.dart';
+import 'profile_page.dart';
 import 'welcome_screen.dart';
 
 class AdminOrdersPage extends StatelessWidget {
@@ -15,22 +14,6 @@ class AdminOrdersPage extends StatelessWidget {
     final l10n = context.l10n;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await FirebaseAuth.instance.signOut();
-          if (context.mounted) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const AuthScreen(role: "Admin")),
-              (route) => false,
-            );
-          }
-        },
-        backgroundColor: const Color(0xFF183020),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.power_settings_new_rounded),
-        label: Text(l10n.text('logout')),
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -74,14 +57,16 @@ class AdminOrdersPage extends StatelessWidget {
                           const Spacer(),
                           const LanguageSelector(),
                           const SizedBox(width: 12),
-                          Container(
-                            height: 52,
-                            width: 52,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.14),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white),
+                          IconButton.filledTonal(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ProfilePage(role: 'Admin'),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.admin_panel_settings_rounded),
                           ),
                         ],
                       ),
