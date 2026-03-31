@@ -36,6 +36,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -68,6 +69,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       parent: _introController,
       curve: const Interval(0.22, 0.9, curve: Curves.easeOut),
     );
+
+    // Trigger auto-login check after a short delay for animations
+    if (widget.firebaseReady) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) _checkAutoLogin();
+      });
+    }
+  }
+
+  Future<void> _checkAutoLogin() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      await _handleContinue();
+    }
   }
 
   @override
@@ -87,6 +102,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
     final currentUser = FirebaseAuth.instance.currentUser;
 
+    // Handle flow for users NOT logged in
     if (currentUser == null) {
       if (widget.preferredRole == 'Admin') {
         Navigator.push(
@@ -95,7 +111,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
         return;
       }
-
       if (widget.preferredRole == 'User') {
         Navigator.push(
           context,
@@ -103,7 +118,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
         return;
       }
-
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
@@ -111,29 +125,37 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       return;
     }
 
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser.uid)
-        .get();
+    // Handle flow for ALREADY logged in users
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
 
-    final role = userDoc.data()?['role']?.toString() ?? 'User';
+      final String role = userDoc.data()?['role']?.toString() ?? 'User';
 
-    if (!mounted) {
-      return;
+      if (!mounted) return;
+
+      if (role == 'Admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+        );
+      }
+    } catch (e) {
+      debugPrint("Autologin Error: $e");
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+        );
+      }
     }
-
-    if (role == 'Admin') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
-    );
   }
 
   @override
