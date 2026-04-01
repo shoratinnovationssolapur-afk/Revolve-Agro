@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
-import 'AdminOrdersPage.dart';
+import 'admin_orders_page.dart';
 import 'auth_screen.dart';
 import 'product_list.dart';
 import 'welcome_screen.dart';
