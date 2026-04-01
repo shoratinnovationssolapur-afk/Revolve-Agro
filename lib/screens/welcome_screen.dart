@@ -36,10 +36,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
-<<<<<<< HEAD
-=======
-
->>>>>>> c3b3fac9c2eb6f1d475121f764e125570edb17fa
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -72,23 +68,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       parent: _introController,
       curve: const Interval(0.22, 0.9, curve: Curves.easeOut),
     );
-<<<<<<< HEAD
-=======
-
-    // Trigger auto-login check after a short delay for animations
-    if (widget.firebaseReady) {
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _checkAutoLogin();
-      });
-    }
-  }
-
-  Future<void> _checkAutoLogin() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      await _handleContinue();
-    }
->>>>>>> c3b3fac9c2eb6f1d475121f764e125570edb17fa
   }
 
   @override
@@ -108,10 +87,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
     final currentUser = FirebaseAuth.instance.currentUser;
 
-<<<<<<< HEAD
-=======
     // Handle flow for users NOT logged in
->>>>>>> c3b3fac9c2eb6f1d475121f764e125570edb17fa
     if (currentUser == null) {
       if (widget.preferredRole == 'Admin') {
         Navigator.push(
@@ -120,10 +96,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
         return;
       }
-<<<<<<< HEAD
-
-=======
->>>>>>> c3b3fac9c2eb6f1d475121f764e125570edb17fa
       if (widget.preferredRole == 'User') {
         Navigator.push(
           context,
@@ -131,10 +103,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
         return;
       }
-<<<<<<< HEAD
-
-=======
->>>>>>> c3b3fac9c2eb6f1d475121f764e125570edb17fa
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
@@ -142,31 +110,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       return;
     }
 
-<<<<<<< HEAD
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser.uid)
-        .get();
-
-    final role = userDoc.data()?['role']?.toString() ?? 'User';
-
-    if (!mounted) {
-      return;
-    }
-
-    if (role == 'Admin') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
-    );
-=======
     // Handle flow for ALREADY logged in users
     try {
       final userDoc = await FirebaseFirestore.instance
@@ -198,7 +141,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
       }
     }
->>>>>>> c3b3fac9c2eb6f1d475121f764e125570edb17fa
   }
 
   @override
