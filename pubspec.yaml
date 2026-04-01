@@ -28,16 +28,31 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  http: ^1.1.0
+  html: ^0.15.4
+
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  url_launcher: ^6.3.0  # Add this line here
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  firebase_core: ^4.6.0
+  cloud_firestore: ^6.2.0
+  firebase_auth: ^6.3.0
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
 
 dev_dependencies:
+
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: "^0.13.1" # Adds the icon generator tool
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -56,12 +71,21 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
+  # Add your assets here if you haven't yet
+  assets:
+    - assets/icon.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
+# This must have ZERO spaces before it!
+# It sits at the same level as 'flutter:' or 'dependencies:'
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon.png"
+  adaptive_icon_background: "#ffffff"
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
@@ -87,3 +111,4 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+

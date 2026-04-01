@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../app_localizations.dart';
+import '../widgets/language_selector.dart';
 import 'auth_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
@@ -6,74 +9,190 @@ class RoleSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text("Choose Language", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), // [cite: 28]
-              const Text("English | Sinhala", style: TextStyle(color: Colors.grey)), // [cite: 28]
-              const SizedBox(height: 40),
-
-              // Farmer Card with Navigation
-              _buildRoleCard(
-                context,
-                title: "Farmer", //
-                icon: Icons.person_outline,
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AuthScreen(role: "Farmer"))
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Dealer Card with Navigation
-              _buildRoleCard(
-                context,
-                title: "Dealer", //
-                icon: Icons.store_mall_directory_outlined,
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AuthScreen(role: "Dealer"))
-                ),
-              ),
-
-              const SizedBox(height: 40),
-              const Text(
-                "We're popular in agriculture\nmarket globally", // [cite: 31]
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF1F5E6),
+              Color(0xFFF7F3E8),
+              Color(0xFFFCEFD9),
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IconButton.filledTonal(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+                const SizedBox(height: 10),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: LanguageSelector(),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  l10n.text('choose_experience_title'),
+                  style: TextStyle(
+                    fontSize: 32,
+                    height: 1.05,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF183020),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  l10n.text('choose_experience_subtitle'),
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.55,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _RoleCard(
+                        title: l10n.text('user_login'),
+                        subtitle: l10n.text('user_login_subtitle'),
+                        icon: Icons.person_outline_rounded,
+                        accent: const Color(0xFF2F6A3E),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AuthScreen(role: "User")),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 18),
+                      _RoleCard(
+                        title: l10n.text('admin_login'),
+                        subtitle: l10n.text('admin_login_subtitle'),
+                        icon: Icons.admin_panel_settings_outlined,
+                        accent: const Color(0xFFD9952E),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AuthScreen(role: "Admin")),
+                          );
+                        },
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.88),
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                l10n.text('multilingual_support'),
+                                style: const TextStyle(height: 1.45),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
 
-  // Updated helper with onTap parameter
-  Widget _buildRoleCard(BuildContext context, {
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap, // Added this callback
-  }) {
-    return GestureDetector(
-      onTap: onTap, // Triggers navigation when clicked
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 50, color: Colors.green),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
+class _RoleCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _RoleCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(30),
+        child: Ink(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.92),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withOpacity(0.12),
+                blurRadius: 28,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                height: 64,
+                width: 64,
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(icon, color: accent, size: 32),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF183020),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Icon(Icons.arrow_forward_rounded, color: Color(0xFF183020)),
+            ],
+          ),
         ),
       ),
     );

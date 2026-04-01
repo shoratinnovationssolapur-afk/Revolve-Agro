@@ -6,49 +6,98 @@ class FertilizerGuideScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Fertilizer Guide"), // [cite: 146]
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            // Placeholder for the Product Image (e.g., Coconut Fertilizer)
-            Container(
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const Icon(Icons.eco, size: 100, color: Colors.green),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE7F1DA),
+              Color(0xFFF7F3E8),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IconButton.filledTonal(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        height: 82,
+                        width: 82,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF2F6A3E), Color(0xFF6CAA58)],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 36),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Fertilizer Guide",
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF183020),
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              "Get quick guidance based on crop, growth week, and field area.",
+                              style: TextStyle(height: 1.45),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInputField("Crop Name", "e.g. Coconut"),
+                      const SizedBox(height: 16),
+                      _buildInputField("Crop Week", "e.g. Week - 4"),
+                      const SizedBox(height: 16),
+                      _buildInputField("Area", "e.g. 20 Hec"),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.insights_outlined),
+                        label: const Text("Get Recommendation"),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 30),
-
-            // Input Fields from your design
-            _buildInputField("Crop Name", "e.g. Coconut"), // [cite: 154]
-            const SizedBox(height: 15),
-            _buildInputField("Crop Week", "e.g. Week - 4"), // [cite: 155]
-            const SizedBox(height: 15),
-            _buildInputField("Area", "e.g. 20 Hec"), // [cite: 157]
-
-            const SizedBox(height: 40),
-
-            // Submit Button [cite: 150, 158]
-            ElevatedButton(
-              onPressed: () {
-                // Logic to show results (Page 18)
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: const Text("Submit"), // [cite: 150]
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -58,14 +107,18 @@ class FertilizerGuideScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF214B2D),
+          ),
+        ),
         const SizedBox(height: 8),
         TextField(
           decoration: InputDecoration(
             hintText: hint,
-            border: const OutlineInputBorder(),
-            filled: true,
-            fillColor: Colors.white,
+            prefixIcon: const Icon(Icons.edit_note_rounded),
           ),
         ),
       ],
