@@ -5,6 +5,7 @@ import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
 import 'profile_page.dart';
 import 'welcome_screen.dart';
+import 'admin_gallery_screen.dart'; // ✅ added
 
 class AdminOrdersPage extends StatelessWidget {
   const AdminOrdersPage({super.key});
@@ -28,6 +29,8 @@ class AdminOrdersPage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
+
+              // HEADER
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                 child: Container(
@@ -40,29 +43,55 @@ class AdminOrdersPage extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
+
+                      // TOP ROW
                       Row(
                         children: [
+
+                          // BACK
                           IconButton.filledTonal(
                             onPressed: () {
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const WelcomeScreen(preferredRole: 'Admin'),
+                                  builder: (context) =>
+                                  const WelcomeScreen(preferredRole: 'Admin'),
                                 ),
-                                (route) => false,
+                                    (route) => false,
                               );
                             },
                             icon: const Icon(Icons.arrow_back_rounded),
                           ),
-                          const Spacer(),
-                          const LanguageSelector(),
-                          const SizedBox(width: 12),
+
+                          const SizedBox(width: 8),
+
+                          // ✅ NEW GALLERY BUTTON
                           IconButton.filledTonal(
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ProfilePage(role: 'Admin'),
+                                  builder: (_) => const AdminGalleryScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.photo_library_outlined),
+                          ),
+
+                          const Spacer(),
+
+                          // LANGUAGE
+                          const LanguageSelector(),
+                          const SizedBox(width: 12),
+
+                          // PROFILE
+                          IconButton.filledTonal(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                  const ProfilePage(role: 'Admin'),
                                 ),
                               );
                             },
@@ -70,25 +99,29 @@ class AdminOrdersPage extends StatelessWidget {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 20),
+
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           l10n.text('incoming_orders'),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 8),
+
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           l10n.text('incoming_orders_subtitle'),
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.82),
+                            color: Colors.white.withValues(alpha: 0.82), // ✅ fixed
                             height: 1.45,
                           ),
                         ),
@@ -97,6 +130,8 @@ class AdminOrdersPage extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // ORDERS LIST
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -104,6 +139,7 @@ class AdminOrdersPage extends StatelessWidget {
                       .orderBy('timestamp', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
+
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -120,11 +156,15 @@ class AdminOrdersPage extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.inbox_outlined, size: 54, color: Color(0xFF2F6A3E)),
+                              const Icon(Icons.inbox_outlined,
+                                  size: 54, color: Color(0xFF2F6A3E)),
                               const SizedBox(height: 12),
                               Text(
                                 l10n.text('no_orders_found'),
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ],
                           ),
@@ -137,15 +177,19 @@ class AdminOrdersPage extends StatelessWidget {
                       itemCount: snapshot.data!.docs.length,
                       itemBuilder: (context, index) {
                         final order = snapshot.data!.docs[index];
-                        final orderData = order.data() as Map<String, dynamic>;
+                        final orderData =
+                        order.data() as Map<String, dynamic>;
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _OrderCard(
                             userName: orderData['userName'] ?? "User",
-                            products: orderData['products'] as List<dynamic>? ?? [],
+                            products:
+                            orderData['products'] as List<dynamic>? ?? [],
                             totalAmount: orderData['totalAmount'].toString(),
-                            deliveryAddress: orderData['deliveryAddress'] as Map<String, dynamic>?,
+                            deliveryAddress:
+                            orderData['deliveryAddress']
+                            as Map<String, dynamic>?,
                           ),
                         );
                       },
@@ -161,6 +205,7 @@ class AdminOrdersPage extends StatelessWidget {
   }
 }
 
+// ✅ RESTORED (IMPORTANT FIX)
 class _OrderCard extends StatelessWidget {
   final String userName;
   final List<dynamic> products;
@@ -177,6 +222,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+
     final addressParts = [
       deliveryAddress?['fullAddress']?.toString() ?? '',
       deliveryAddress?['landmark']?.toString() ?? '',
@@ -189,135 +235,55 @@ class _OrderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
           Row(
             children: [
-              Container(
-                height: 46,
-                width: 46,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F2DF),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.person_outline_rounded, color: Color(0xFF2F6A3E)),
-              ),
-              const SizedBox(width: 12),
+              const Icon(Icons.person_outline),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   userName,
                   style: const TextStyle(
-                    fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF183020),
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5E8CF),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Text(
-                  l10n.text('processing'),
-                  style: TextStyle(
-                    color: Color(0xFF8C5B1C),
-                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+
+          const SizedBox(height: 14),
+
           ...products.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.network(
-                        item['imageUrl'] ?? "https://via.placeholder.com/150",
-                        height: 56,
-                        width: 56,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 56,
-                          width: 56,
-                          color: const Color(0xFFE8E4DB),
-                          child: const Icon(Icons.image_outlined, color: Colors.grey),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['productName'],
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Quantity: ${item['quantity']}",
-                            style: TextStyle(color: Colors.grey.shade700),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-          const Divider(height: 26),
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              "${item['productName']} (Qty: ${item['quantity']})",
+            ),
+          )),
+
+          const Divider(),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.text('total_received'),
-                style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
-              ),
+              Text(l10n.text('total_received')),
               Text(
                 "Rs.$totalAmount/=",
                 style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                   color: Color(0xFF2F6A3E),
                 ),
               ),
             ],
           ),
+
           if (addressParts.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F2E7),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.location_on_outlined, color: Color(0xFFD9952E)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      addressParts.join(', '),
-                      style: const TextStyle(height: 1.45),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 10),
+            Text(addressParts.join(', ')),
           ],
         ],
       ),

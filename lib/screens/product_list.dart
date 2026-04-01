@@ -12,6 +12,7 @@ import 'payment_page.dart';
 import 'profile_page.dart';
 import 'product_details_page.dart';
 import 'welcome_screen.dart';
+import 'user_gallery_screen.dart';
 
 class Product {
   final String name;
@@ -158,12 +159,15 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                                     MaterialPageRoute(
                                       builder: (context) => const WelcomeScreen(preferredRole: 'User'),
                                     ),
-                                    (route) => false,
+                                        (route) => false,
                                   );
                                 },
                                 icon: const Icon(Icons.arrow_back_rounded),
                               ),
+
                               const Spacer(),
+
+                              // 👤 PROFILE (existing)
                               IconButton.filledTonal(
                                 onPressed: () {
                                   Navigator.push(
@@ -175,10 +179,28 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                                 },
                                 icon: const Icon(Icons.person_outline_rounded),
                               ),
+
+                              const SizedBox(width: 6),
+
+                              // 🔥 NEW GALLERY BUTTON (ADDED)
+                              IconButton.filledTonal(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const UserGalleryScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.photo_library_outlined),
+                              ),
+
+                              const SizedBox(width: 6),
+
+                              // 🌐 LANGUAGE (existing)
                               const LanguageSelector(),
                             ],
                           ),
-                          const SizedBox(height: 12),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -238,20 +260,20 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                                   children: _highlights
                                       .map(
                                         (chip) => Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.16),
-                                            borderRadius: BorderRadius.circular(30),
-                                          ),
-                                          child: Text(
-                                            chip,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.16),
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      child: Text(
+                                        chip,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
                                         ),
-                                      )
+                                      ),
+                                    ),
+                                  )
                                       .toList(),
                                 ),
                               ],
