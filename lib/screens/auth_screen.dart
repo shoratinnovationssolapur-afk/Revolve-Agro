@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
 import 'admin_dashboard_page.dart';
 import 'product_list.dart';
@@ -45,21 +46,21 @@ class _AuthScreenState extends State<AuthScreen> {
   String _friendlyAuthMessage(FirebaseAuthException e) {
     switch (e.code) {
       case 'invalid-email':
-        return 'Please enter a valid email address.';
+        return context.l10n.text('invalid_email');
       case 'user-not-found':
       case 'wrong-password':
       case 'invalid-credential':
-        return 'Incorrect email or password.';
+        return context.l10n.text('incorrect_email_password');
       case 'email-already-in-use':
-        return 'This email is already registered. Please log in instead.';
+        return context.l10n.text('email_registered_login');
       case 'weak-password':
-        return 'Password should be at least 6 characters long.';
+        return context.l10n.text('weak_password');
       case 'operation-not-allowed':
-        return 'Email/password sign-in is not enabled in Firebase Auth.';
+        return context.l10n.text('email_password_disabled');
       case 'too-many-requests':
-        return 'Too many attempts. Please wait a moment and try again.';
+        return context.l10n.text('too_many_attempts');
       default:
-        return e.message ?? 'Authentication failed. Please try again.';
+        return e.message ?? context.l10n.text('auth_failed');
     }
   }
 
@@ -67,12 +68,12 @@ class _AuthScreenState extends State<AuthScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Incomplete Form'),
+        title: Text(context.l10n.text('incomplete_form')),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(context.l10n.text('ok')),
           ),
         ],
       ),
@@ -89,13 +90,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _handleAuth() async {
     if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
-      await _showValidationPopup('Please fill in email and password.');
+      await _showValidationPopup(context.l10n.text('please_fill_email_password'));
       return;
     }
 
     if (!isLogin &&
         (_nameController.text.trim().isEmpty || _phoneController.text.trim().isEmpty)) {
-      await _showValidationPopup('Please fill in full name and phone number before signing up.');
+      await _showValidationPopup(context.l10n.text('please_fill_name_phone'));
       return;
     }
 
@@ -104,15 +105,15 @@ class _AuthScreenState extends State<AuthScreen> {
       if (_adminCodeController.text.trim().isEmpty) {
         await _showValidationPopup(
           widget.role == 'SuperAdmin'
-              ? 'Please enter the super admin code.'
-              : 'Please enter the admin code.',
+              ? context.l10n.text('please_enter_super_admin_code')
+              : context.l10n.text('please_enter_admin_code'),
         );
         return;
       }
 
       if (widget.role == 'Admin' &&
           _adminCodeController.text.trim() != _defaultAdminCode) {
-        await _showValidationPopup('Invalid admin code.');
+        await _showValidationPopup(context.l10n.text('invalid_admin_code'));
         return;
       }
 
@@ -228,7 +229,7 @@ class _AuthScreenState extends State<AuthScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Database Error: $e")),
+        SnackBar(content: Text(context.l10n.textWithArgs('database_error', {'error': '$e'}))),
       );
     } finally {
       if (mounted) {
@@ -257,93 +258,145 @@ class _AuthScreenState extends State<AuthScreen> {
     final l10n = context.l10n;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              accent.withOpacity(0.14),
-              const Color(0xFFF7F3E8),
-              const Color(0xFFF5F8EE),
-            ],
-          ),
-        ),
+      body: AppShell(
+        colors: [
+          accent.withOpacity(0.14),
+          const Color(0xFFF7F3E8),
+          const Color(0xFFF5F8EE),
+        ],
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + MediaQuery.of(context).viewInsets.bottom),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton.filledTonal(
-                  onPressed: _goToWelcomeScreen,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
-                const SizedBox(height: 10),
-                const Align(
-                  alignment: Alignment.centerRight,
-                  child: LanguageSelector(),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    IconButton.filledTonal(
+                      onPressed: _goToWelcomeScreen,
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
+                    const LanguageSelector(),
+                  ],
                 ),
                 const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.88),
-                    borderRadius: BorderRadius.circular(34),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        height: 72,
-                        width: 72,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [accent, accent.withOpacity(0.7)],
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Icon(
-                          isSuperAdmin
-                              ? Icons.security_rounded
-                              : isAdmin
-                              ? Icons.admin_panel_settings_rounded
-                              : Icons.eco_rounded,
-                          color: Colors.white,
-                          size: 36,
-                        ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compactHeader = constraints.maxWidth < 370;
+                    return Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.88),
+                        borderRadius: BorderRadius.circular(34),
                       ),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isSuperAdmin
-                                  ? "Super Admin Workspace"
-                                  : isAdmin
-                                  ? l10n.text('admin_workspace')
-                                  : l10n.text('user_workspace'),
-                              style: TextStyle(
-                                color: accent,
-                                fontWeight: FontWeight.w700,
-                              ),
+                      child: compactHeader
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  height: 72,
+                                  width: 72,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [accent, accent.withOpacity(0.7)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Icon(
+                                    isSuperAdmin
+                                        ? Icons.security_rounded
+                                        : isAdmin
+                                        ? Icons.admin_panel_settings_rounded
+                                        : Icons.eco_rounded,
+                                    color: Colors.white,
+                                    size: 36,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  isSuperAdmin
+                                      ? l10n.text('super_admin_workspace')
+                                      : isAdmin
+                                      ? l10n.text('admin_workspace')
+                                      : l10n.text('farmer_workspace'),
+                                  style: TextStyle(
+                                    color: accent,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  isLogin
+                                      ? l10n.text('welcome_back')
+                                      : l10n.text('create_your_account'),
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF183020),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                Container(
+                                  height: 72,
+                                  width: 72,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [accent, accent.withOpacity(0.7)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Icon(
+                                    isSuperAdmin
+                                        ? Icons.security_rounded
+                                        : isAdmin
+                                        ? Icons.admin_panel_settings_rounded
+                                        : Icons.eco_rounded,
+                                    color: Colors.white,
+                                    size: 36,
+                                  ),
+                                ),
+                                const SizedBox(width: 18),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isSuperAdmin
+                                            ? l10n.text('super_admin_workspace')
+                                            : isAdmin
+                                            ? l10n.text('admin_workspace')
+                                            : l10n.text('farmer_workspace'),
+                                        style: TextStyle(
+                                          color: accent,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        isLogin
+                                            ? l10n.text('welcome_back')
+                                            : l10n.text('create_your_account'),
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF183020),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isLogin
-                                  ? l10n.text('welcome_back')
-                                  : l10n.text('create_your_account'),
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF183020),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 18),
 

@@ -215,7 +215,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(22),
                             ),
                             child: Text(
-                              isAdmin ? l10n.text('admin_workspace') : l10n.text('user_workspace'),
+                              isAdmin ? l10n.text('admin_workspace') : l10n.text('farmer_workspace'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,

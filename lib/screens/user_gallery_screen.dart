@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
+import '../app_localizations.dart';
+import '../widgets/app_shell.dart';
 import 'full_screen_viewer.dart';
 
 class UserGalleryScreen extends StatelessWidget {
@@ -16,53 +19,24 @@ class UserGalleryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFEAF3DE), Color(0xFFF7F3E8)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      body: AppShell(
         child: SafeArea(
           child: Column(
             children: [
-              // 🔥 HEADER (MATCH APP DESIGN)
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF183020), Color(0xFF30523B)],
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        style: IconButton.styleFrom(backgroundColor: Colors.white24),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        "Gallery",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: AppPageHeader(
+                  title: l10n.text('gallery_title'),
+                  subtitle: l10n.text('gallery_subtitle'),
+                  badgeIcon: Icons.photo_library_outlined,
+                  leading: const _GalleryBackButton(),
                 ),
               ),
 
-              // 🔥 LIVE GRID FROM FIRESTORE
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: FirebaseFirestore.instance
                       .collection('gallery')
                       .orderBy('uploadedAt', descending: true)
@@ -72,8 +46,10 @@ class UserGalleryScreen extends StatelessWidget {
                       return const Center(child: CircularProgressIndicator(color: Color(0xFF2F6A3E)));
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Center(
-                        child: Text("No memories shared yet.", style: TextStyle(color: Colors.grey)),
+                      return AppEmptyState(
+                        icon: Icons.perm_media_outlined,
+                        title: l10n.text('no_memories_title'),
+                        subtitle: l10n.text('no_memories_subtitle'),
                       );
                     }
 
@@ -87,9 +63,12 @@ class UserGalleryScreen extends StatelessWidget {
                         childAspectRatio: 1,
                       ),
                       itemBuilder: (context, index) {
-                        var media = snapshot.data!.docs[index];
-                        String url = media['url'];
-                        String type = media['type'];
+                        final media = snapshot.data!.docs[index];
+                        final payload = media.data();
+                        final url = payload['url']?.toString() ?? '';
+                        final type = payload['type']?.toString() ?? 'image';
+                        final productName = payload['productName']?.toString() ?? '';
+                        final description = payload['description']?.toString() ?? '';
 
                         return GestureDetector(
                           onTap: () {
@@ -106,9 +85,13 @@ class UserGalleryScreen extends StatelessWidget {
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
-                              color: Colors.white,
+                              color: Colors.white.withOpacity(0.94),
                               boxShadow: [
-                                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 10),
+                                ),
                               ],
                             ),
                             child: ClipRRect(
@@ -129,8 +112,56 @@ class UserGalleryScreen extends StatelessWidget {
                                     const Center(
                                       child: Icon(
                                         Icons.play_circle_fill,
-                                        color: Colors.white70,
-                                        size: 45,
+                                        color: Colors.white,
+                                        size: 52,
+                                      ),
+                                    ),
+                                  if (productName.isNotEmpty || description.isNotEmpty)
+                                    Positioned(
+                                      left: 0,
+                                      right: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.black.withOpacity(0.72),
+                                            ],
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (productName.isNotEmpty)
+                                              Text(
+                                                productName,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            if (description.isNotEmpty) ...[
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                description,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  height: 1.3,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                 ],
@@ -147,6 +178,18 @@ class UserGalleryScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _GalleryBackButton extends StatelessWidget {
+  const _GalleryBackButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filledTonal(
+      onPressed: () => Navigator.pop(context),
+      icon: const Icon(Icons.arrow_back_rounded),
     );
   }
 }
