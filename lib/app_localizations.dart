@@ -32,7 +32,7 @@ class AppLocalizations {
       'language': 'Language',
       'english': 'English',
       'marathi': 'Marathi',
-      'grow_smarter_title': 'Grow smarter,\nharvest stronger.',
+      'grow_smarter_title': 'Grow smarter,\nGrow healthier.',  
       'grow_smarter_subtitle':
           'Discover crop care products, place orders faster, and manage your farm purchases in one polished flow.',
       'trusted_products': 'Trusted Products',
@@ -146,7 +146,7 @@ class AppLocalizations {
       'language': 'भाषा',
       'english': 'इंग्रजी',
       'marathi': 'मराठी',
-      'grow_smarter_title': 'अधिक शहाणपणाने वाढवा,\nअधिक मजबूत पीक घ्या.',
+      'grow_smarter_title': 'हुशार बना, निरोगी बना — आजची स्मार्ट शेती, उद्याचं यश',
       'grow_smarter_subtitle':
           'पीक काळजी उत्पादने शोधा, ऑर्डर पटकन द्या आणि तुमची शेती खरेदी एकाच सुंदर प्रवाहात सांभाळा.',
       'trusted_products': 'विश्वसनीय उत्पादने',

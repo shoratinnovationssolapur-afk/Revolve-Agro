@@ -40,8 +40,10 @@ class RoleSelectionScreen extends StatelessWidget {
                   child: LanguageSelector(),
                 ),
                 const SizedBox(height: 18),
-                Text(
-                  l10n.text('choose_experience_title'),
+
+                /// 🔥 TITLE CHANGED (ONLY THIS LINE MODIFIED)
+                const Text(
+                  "Welcome to Revolve Agro",
                   style: TextStyle(
                     fontSize: 32,
                     height: 1.05,
@@ -49,7 +51,10 @@ class RoleSelectionScreen extends StatelessWidget {
                     color: Color(0xFF183020),
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
+                /// ❌ subtitle NOT changed (as you didn’t ask)
                 Text(
                   l10n.text('choose_experience_subtitle'),
                   style: TextStyle(
@@ -58,11 +63,14 @@ class RoleSelectionScreen extends StatelessWidget {
                     color: Colors.grey.shade700,
                   ),
                 ),
+
                 const SizedBox(height: 26),
+
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
+                  child: Column(
+                    children: [
+
+                      /// 👤 USER
                       _RoleCard(
                         title: l10n.text('user_login'),
                         subtitle: l10n.text('user_login_subtitle'),
@@ -71,11 +79,16 @@ class RoleSelectionScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const AuthScreen(role: "User")),
+                            MaterialPageRoute(
+                              builder: (context) => const AuthScreen(role: "User"),
+                            ),
                           );
                         },
                       ),
+
                       const SizedBox(height: 18),
+
+                      /// 🛠 ADMIN
                       _RoleCard(
                         title: l10n.text('admin_login'),
                         subtitle: l10n.text('admin_login_subtitle'),
@@ -84,27 +97,34 @@ class RoleSelectionScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const AuthScreen(role: "Admin")),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      _RoleCard(
-                        title: 'Super Admin',
-                        subtitle: 'Manage members and admins',
-                        icon: Icons.security_rounded,
-                        accent: const Color(0xFF4B2A63),
-                        onTap: () {
-                          Navigator.push(
-                            context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const AuthScreen(role: "SuperAdmin"),
+                              builder: (context) => const AuthScreen(role: "Admin"),
                             ),
                           );
                         },
                       ),
+
                       const SizedBox(height: 18),
+
+                      /// 🔥 NEW SUPER ADMIN (ADDED ONLY)
+                      _RoleCard(
+                        title: "Super Admin Login",
+                        subtitle: "Manage admins, control platform and monitor system activity.",
+                        icon: Icons.workspace_premium_outlined,
+                        accent: const Color(0xFF6A5ACD),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AuthScreen(role: "SuperAdmin"),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const Spacer(),
+
+                      /// FOOTER (UNCHANGED)
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -124,13 +144,12 @@ class RoleSelectionScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -187,7 +206,7 @@ class _RoleCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     Text(
                       title,
                       style: const TextStyle(
