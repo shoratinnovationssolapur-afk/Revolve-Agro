@@ -8,8 +8,8 @@ import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
 import 'admin_orders_page.dart';
 import 'auth_screen.dart';
-import 'product_list.dart';
 import 'role_selection_screen.dart';
+import 'user_dashboard.dart';
 
 class WelcomeScreen extends StatefulWidget {
   final String? preferredRole;
@@ -129,7 +129,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+          MaterialPageRoute(builder: (context) => const UserDashboard()),
         );
       }
     } catch (e) {
@@ -412,7 +412,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                                     Navigator.push(
                                                       context,
                                                       MaterialPageRoute(
-                                                        builder: (context) => RevolveAgroProducts(),
+                                                        builder: (context) => const UserDashboard(),
                                                       ),
                                                     );
                                                   }

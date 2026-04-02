@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
 import 'profile_page.dart';
 import 'welcome_screen.dart';
@@ -15,123 +16,58 @@ class AdminOrdersPage extends StatelessWidget {
     final l10n = context.l10n;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFEAF3DE),
-              Color(0xFFF7F3E8),
-            ],
-          ),
-        ),
+      body: AppShell(
         child: SafeArea(
           child: Column(
             children: [
-
-              // HEADER
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-                child: Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF183020), Color(0xFF30523B)],
+                child: AppPageHeader(
+                  title: l10n.text('incoming_orders'),
+                  subtitle: l10n.text('incoming_orders_subtitle'),
+                  badgeIcon: Icons.inventory_2_outlined,
+                  leading: IconButton.filledTonal(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WelcomeScreen(preferredRole: 'Admin'),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                  actions: [
+                    IconButton.filledTonal(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminGalleryScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.photo_library_outlined),
                     ),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Column(
-                    children: [
-
-                      // TOP ROW
-                      Row(
-                        children: [
-
-                          // BACK
-                          IconButton.filledTonal(
-                            onPressed: () {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                  const WelcomeScreen(preferredRole: 'Admin'),
-                                ),
-                                    (route) => false,
-                              );
-                            },
-                            icon: const Icon(Icons.arrow_back_rounded),
+                    const SizedBox(width: 8),
+                    const LanguageSelector(),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ProfilePage(role: 'Admin'),
                           ),
-
-                          const SizedBox(width: 8),
-
-                          // ✅ NEW GALLERY BUTTON
-                          IconButton.filledTonal(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminGalleryScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.photo_library_outlined),
-                          ),
-
-                          const Spacer(),
-
-                          // LANGUAGE
-                          const LanguageSelector(),
-                          const SizedBox(width: 12),
-
-                          // PROFILE
-                          IconButton.filledTonal(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                  const ProfilePage(role: 'Admin'),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.admin_panel_settings_rounded),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          l10n.text('incoming_orders'),
-                          style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          l10n.text('incoming_orders_subtitle'),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.82), // ✅ fixed
-                            height: 1.45,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                        );
+                      },
+                      icon: const Icon(Icons.admin_panel_settings_rounded),
+                    ),
+                  ],
                 ),
               ),
 
-              // ORDERS LIST
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -139,36 +75,15 @@ class AdminOrdersPage extends StatelessWidget {
                       .orderBy('timestamp', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
-
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
 
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Center(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 24),
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.inbox_outlined,
-                                  size: 54, color: Color(0xFF2F6A3E)),
-                              const SizedBox(height: 12),
-                              Text(
-                                l10n.text('no_orders_found'),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      return AppEmptyState(
+                        icon: Icons.inbox_outlined,
+                        title: l10n.text('no_orders_found'),
+                        subtitle: 'New customer orders will appear here as soon as they are placed.',
                       );
                     }
 
@@ -177,8 +92,7 @@ class AdminOrdersPage extends StatelessWidget {
                       itemCount: snapshot.data!.docs.length,
                       itemBuilder: (context, index) {
                         final order = snapshot.data!.docs[index];
-                        final orderData =
-                        order.data() as Map<String, dynamic>;
+                        final orderData = order.data() as Map<String, dynamic>;
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
@@ -233,16 +147,30 @@ class _OrderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withOpacity(0.92),
         borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Row(
             children: [
-              const Icon(Icons.person_outline),
+              Container(
+                height: 44,
+                width: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE7F1D9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.person_outline, color: Color(0xFF2F6A3E)),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -257,13 +185,38 @@ class _OrderCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 14),
-
-          ...products.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              "${item['productName']} (Qty: ${item['quantity']})",
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5EEDC),
+              borderRadius: BorderRadius.circular(18),
             ),
-          )),
+            child: Text(
+              '${products.length} item(s) in this order',
+              style: const TextStyle(
+                color: Color(0xFF8A5D1A),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          ...products.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.shopping_basket_outlined, size: 18, color: Color(0xFF2F6A3E)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "${item['productName']} (Qty: ${item['quantity']})",
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
           const Divider(),
 

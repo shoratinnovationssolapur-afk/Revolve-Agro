@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import '../app_localizations.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
 import 'PaymentSuccessScreen.dart';
 
@@ -59,6 +60,12 @@ class _PaymentPageState extends State<PaymentPage> {
     currentItems = List.from(widget.cartItems);
     currentTotal = widget.totalAmount;
     _loadSavedAddress();
+  }
+
+  void _showEmptyCartMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.text('no_items_added_cart'))),
+    );
   }
 
   Future<void> _loadSavedAddress() async {
@@ -186,26 +193,23 @@ class _PaymentPageState extends State<PaymentPage> {
                       style: TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 18),
-                    Row(
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
                       children: [
-                        Expanded(
-                          child: ChoiceChip(
-                            label: Text(l10n.text('current_location')),
-                            selected: selectedType == 'current_location',
-                            onSelected: (_) {
-                              setModalState(() => selectedType = 'current_location');
-                            },
-                          ),
+                        ChoiceChip(
+                          label: Text(l10n.text('current_location')),
+                          selected: selectedType == 'current_location',
+                          onSelected: (_) {
+                            setModalState(() => selectedType = 'current_location');
+                          },
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ChoiceChip(
-                            label: Text(l10n.text('manual_address')),
-                            selected: selectedType == 'manual',
-                            onSelected: (_) {
-                              setModalState(() => selectedType = 'manual');
-                            },
-                          ),
+                        ChoiceChip(
+                          label: Text(l10n.text('manual_address')),
+                          selected: selectedType == 'manual',
+                          onSelected: (_) {
+                            setModalState(() => selectedType = 'manual');
+                          },
                         ),
                       ],
                     ),
@@ -389,8 +393,8 @@ class _PaymentPageState extends State<PaymentPage> {
         return {
           'fullAddress':
               'Latitude: ${position.latitude.toStringAsFixed(6)}, Longitude: ${position.longitude.toStringAsFixed(6)}',
-          'landmark': 'Current browser location',
-          'city': 'Current Location',
+          'landmark': context.l10n.text('current_location'),
+          'city': context.l10n.text('current_location'),
           'pincode': '',
         };
       }
@@ -411,7 +415,7 @@ class _PaymentPageState extends State<PaymentPage> {
             ].where((part) => part != null && part.trim().isNotEmpty).join(', '),
             'city': placemark.locality?.trim().isNotEmpty == true
                 ? placemark.locality!
-                : (placemark.administrativeArea ?? 'Current Location'),
+                : (placemark.administrativeArea ?? context.l10n.text('current_location')),
             'pincode': placemark.postalCode ?? '',
           };
         }
@@ -422,8 +426,8 @@ class _PaymentPageState extends State<PaymentPage> {
       return {
         'fullAddress':
             'Latitude: ${position.latitude.toStringAsFixed(6)}, Longitude: ${position.longitude.toStringAsFixed(6)}',
-        'landmark': 'Current device location',
-        'city': 'Current Location',
+        'landmark': context.l10n.text('current_location'),
+        'city': context.l10n.text('current_location'),
         'pincode': '',
       };
     } catch (e) {
@@ -479,6 +483,10 @@ class _PaymentPageState extends State<PaymentPage> {
   Future<void> _handleFinalPayment(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+    if (currentItems.isEmpty) {
+      _showEmptyCartMessage();
+      return;
+    }
     if (_deliverySummary.isEmpty) {
       await _showPopup(
         title: context.l10n.text('delivery_address'),
@@ -570,194 +578,179 @@ class _PaymentPageState extends State<PaymentPage> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Scaffold(
-      backgroundColor: const Color(0xFFA8C695),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(l10n.text('payment'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const LanguageSelector(),
+      body: AppShell(
+        colors: const [
+          Color(0xFFE0EED2),
+          Color(0xFFF7F3E8),
+          Color(0xFFFFFBF4),
+        ],
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                AppPageHeader(
+                  title: l10n.text('payment'),
+                  subtitle: 'Review your order, confirm delivery details, and send it to the Revolve Agro team.',
+                  badgeIcon: Icons.payments_outlined,
+                  leading: IconButton.filledTonal(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                  actions: const [
+                    LanguageSelector(),
                   ],
                 ),
-              ),
-              const SizedBox(height: 15),
+                const SizedBox(height: 15),
 
-              // Summary Card
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.text('order_summary'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            const Divider(),
-
-                            // 3. Updated List with Remove Icon
-                            ...List.generate(currentItems.length, (index) {
-                              final item = currentItems[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      "+${item['quantity']}",
-                                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(item['productName'], style: const TextStyle(fontSize: 15)),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                                      onPressed: () => _removeItem(index),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-
-                            const Divider(height: 30),
-                            _buildSummaryRow(l10n.text('total_amount'), "Rs.$currentTotal/="),
-                            _buildSummaryRow(l10n.text('delivery'), l10n.text('delivery_days')),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on_outlined, color: Colors.green),
-                                const SizedBox(width: 8),
-                                Expanded(
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        AppGlassCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(l10n.text('order_summary'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const Divider(),
+                              if (currentItems.isEmpty)
+                                Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
                                   child: Text(
-                                    l10n.text('delivery_address'),
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    l10n.text('no_items_added_cart'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                                 ),
-                                TextButton(
-                                  onPressed: _showAddressSheet,
-                                  child: Text(_deliverySummary.isEmpty ? l10n.text('add') : l10n.text('change')),
+                              ...List.generate(currentItems.length, (index) {
+                                final item = currentItems[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        "+${item['quantity']}",
+                                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(item['productName'], style: const TextStyle(fontSize: 15)),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                        onPressed: () => _removeItem(index),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              const Divider(height: 30),
+                              _buildSummaryRow(l10n.text('total_amount'), "Rs.$currentTotal/="),
+                              _buildSummaryRow(l10n.text('delivery'), l10n.text('delivery_days')),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        AppGlassCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on_outlined, color: Colors.green),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      l10n.text('delivery_address'),
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _showAddressSheet,
+                                    child: Text(_deliverySummary.isEmpty ? l10n.text('add') : l10n.text('change')),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              if (_deliverySummary.isEmpty)
+                                Text(
+                                  l10n.text('add_address_before_payment'),
+                                  style: TextStyle(color: Colors.grey),
+                                )
+                              else ...[
+                                Text(
+                                  deliveryType == 'current_location'
+                                      ? l10n.text('address_mode_current')
+                                      : l10n.text('address_mode_manual'),
+                                  style: const TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _deliverySummary,
+                                  style: const TextStyle(height: 1.4),
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: 8),
-                            if (_deliverySummary.isEmpty)
-                              Text(
-                                l10n.text('add_address_before_payment'),
-                                style: TextStyle(color: Colors.grey),
-                              )
-                            else ...[
-                              Text(
-                                deliveryType == 'current_location'
-                                    ? l10n.text('current_location')
-                                    : l10n.text('saved_address'),
-                                style: const TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w600,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        AppGlassCard(
+                          child: Column(
+                            children: [
+                              Text(l10n.text('pay_via_card'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 15),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF5F5F5),
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: Text(
+                                  "Total: Rs.$currentTotal/=",
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _deliverySummary,
-                                style: const TextStyle(height: 1.4),
-                              ),
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 15),
-
-                      // Payment Details
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(l10n.text('pay_via_card'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 15),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF5F5F5),
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Text(
-                                "Total: Rs.$currentTotal/=",
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 10),
-              _contactButton(),
-              const SizedBox(height: 15),
-
-              ElevatedButton(
-                onPressed: isSavingOrder ? null : () => _handleFinalPayment(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF2991E),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 60),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  elevation: 5,
+                const SizedBox(height: 10),
+                _contactButton(),
+                const SizedBox(height: 15),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isSavingOrder ? null : () => _handleFinalPayment(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF2991E),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 60),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      elevation: 5,
+                    ),
+                    child: isSavingOrder
+                        ? const SizedBox(
+                            height: 26,
+                            width: 26,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                          )
+                        : Text(l10n.text('pay_now'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  ),
                 ),
-                child: isSavingOrder
-                    ? const SizedBox(
-                        height: 26,
-                        width: 26,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-                      )
-                    : Text(l10n.text('pay_now'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
@@ -768,9 +761,20 @@ class _PaymentPageState extends State<PaymentPage> {
   Widget _contactButton() {
     return InkWell(
       onTap: _contactSeller,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+      borderRadius: BorderRadius.circular(22),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.92),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

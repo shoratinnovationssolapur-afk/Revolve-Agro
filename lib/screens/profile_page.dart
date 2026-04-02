@@ -6,7 +6,7 @@ import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
 import 'admin_orders_page.dart';
 import 'auth_screen.dart';
-import 'product_list.dart';
+import 'user_dashboard.dart';
 import 'welcome_screen.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -82,7 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _goToHome() {
     final Widget destination = widget.role == 'Admin'
         ? const AdminOrdersPage()
-        : RevolveAgroProducts();
+        : const UserDashboard();
 
     Navigator.pushAndRemoveUntil(
       context,
@@ -209,7 +209,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(22),
                             ),
                             child: Text(
-                              isAdmin ? l10n.text('admin_workspace') : l10n.text('user_workspace'),
+                              isAdmin ? l10n.text('admin_workspace') : l10n.text('farmer_workspace'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
