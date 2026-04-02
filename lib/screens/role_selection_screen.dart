@@ -60,8 +60,9 @@ class RoleSelectionScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 26),
                 Expanded(
-                  child: Column(
-                    children: [
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
                       _RoleCard(
                         title: l10n.text('user_login'),
                         subtitle: l10n.text('user_login_subtitle'),
@@ -87,7 +88,23 @@ class RoleSelectionScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 18),
+                      _RoleCard(
+                        title: 'Super Admin',
+                        subtitle: 'Manage members and admins',
+                        icon: Icons.security_rounded,
+                        accent: const Color(0xFF4B2A63),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AuthScreen(role: "SuperAdmin"),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 18),
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -107,7 +124,8 @@ class RoleSelectionScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
