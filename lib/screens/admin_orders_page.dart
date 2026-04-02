@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
+import 'admin_manage_products_page.dart';
 import 'profile_page.dart';
 import 'welcome_screen.dart';
 import 'admin_gallery_screen.dart'; // ✅ added
@@ -45,7 +46,10 @@ class AdminOrdersPage extends StatelessWidget {
                     children: [
 
                       // TOP ROW
-                      Row(
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
 
                           // BACK
@@ -78,11 +82,22 @@ class AdminOrdersPage extends StatelessWidget {
                             icon: const Icon(Icons.photo_library_outlined),
                           ),
 
-                          const Spacer(),
-
+                          // Manage products
+                          IconButton.filledTonal(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const AdminManageProductsPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.inventory_2_outlined),
+                          ),
+                          
                           // LANGUAGE
                           const LanguageSelector(),
-                          const SizedBox(width: 12),
 
                           // PROFILE
                           IconButton.filledTonal(
@@ -91,7 +106,7 @@ class AdminOrdersPage extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                  const ProfilePage(role: 'Admin'),
+                                      const ProfilePage(role: 'Admin'),
                                 ),
                               );
                             },

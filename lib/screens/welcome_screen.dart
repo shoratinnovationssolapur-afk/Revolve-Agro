@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
-import 'admin_orders_page.dart';
+import 'admin_dashboard_page.dart';
 import 'auth_screen.dart';
 import 'product_list.dart';
 import 'role_selection_screen.dart';
@@ -124,7 +124,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       if (role == 'Admin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+          MaterialPageRoute(
+            builder: (context) => const AdminDashboardPage(),
+          ),
         );
       } else {
         Navigator.pushReplacement(

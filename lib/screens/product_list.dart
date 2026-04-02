@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
 
@@ -15,18 +14,22 @@ import 'welcome_screen.dart';
 import 'user_gallery_screen.dart';
 
 class Product {
+  final String? id;
   final String name;
   final String details;
   final String description;
   final String imageUrl;
-  final String price;
+  final int price;
+  final int inventoryQuantity;
 
   Product({
+    this.id,
     required this.name,
     required this.details,
     required this.description,
     required this.imageUrl,
-    this.price = "Request Quote",
+    this.price = 0,
+    this.inventoryQuantity = 999999,
   });
 }
 
@@ -42,21 +45,24 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
       details: 'Mycorrhizal Bio Fertilizer',
       description: 'Supports stronger root development and improves nutrient uptake for healthier crop growth.',
       imageUrl: 'https://via.placeholder.com/800x500?text=REVO+RHIZAL',
-      price: 'Rs.2400/=',
+      price: 2400,
+      inventoryQuantity: 999999,
     ),
     Product(
       name: 'REVO MICRO MIX',
       details: 'Mix Micronutrient Liquid',
       description: 'A balanced micronutrient blend designed to support plant vigor across multiple growth stages.',
       imageUrl: 'https://via.placeholder.com/800x500?text=REVO+MICRO+MIX',
-      price: 'Rs.1500/=',
+      price: 1500,
+      inventoryQuantity: 999999,
     ),
     Product(
       name: 'REVO POTASH',
       details: 'Potash Derived From Rhodophytes',
       description: 'Helps improve crop quality, stress tolerance, and overall plant strength.',
       imageUrl: 'https://via.placeholder.com/800x500?text=REVO+POTASH',
-      price: 'Rs.800/=',
+      price: 800,
+      inventoryQuantity: 999999,
     ),
   ];
 
@@ -67,12 +73,47 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
   ];
 
   Future<List<Product>> fetchProducts() async {
-    const url = 'https://revolveagro.com';
+    try {
+      final productsSnapshot = await FirebaseFirestore.instance
+          .collection('products')
+          .orderBy('updatedAt', descending: true)
+          .get();
+
+      if (productsSnapshot.docs.isNotEmpty) {
+        return productsSnapshot.docs.map((doc) {
+          final data = doc.data();
+
+          final priceRaw = data['price'];
+          final invRaw = data['inventoryQuantity'];
+
+          final price = priceRaw is num
+              ? priceRaw.toInt()
+              : int.tryParse((priceRaw ?? 1500).toString()) ?? 1500;
+
+          final inventoryQuantity = invRaw is num
+              ? invRaw.toInt()
+              : int.tryParse((invRaw ?? 999999).toString()) ?? 999999;
+
+          return Product(
+            id: doc.id,
+            name: (data['name'] ?? '').toString(),
+            details: (data['details'] ?? '').toString(),
+            description: (data['description'] ?? '').toString(),
+            imageUrl: (data['imageUrl'] ?? '').toString(),
+            price: price,
+            inventoryQuantity: inventoryQuantity,
+          );
+        }).toList();
+      }
+    } catch (_) {
+      // If Firestore isn't available for some reason, fall back to scrape.
+    }
 
     if (kIsWeb) {
       return _fallbackProducts;
     }
 
+    const url = 'https://revolveagro.com';
     try {
       final response = await http.get(Uri.parse(url));
 
@@ -86,10 +127,17 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
 
         return productElements.map((element) {
           return Product(
-            name: element.querySelector('h3')?.text.trim() ?? 'Unknown Product',
-            details: element.querySelector('.product-details')?.text.trim() ?? '',
-            description: element.querySelector('.product-description')?.text.trim() ?? '',
-            imageUrl: '$url/${element.querySelector('img')?.attributes['src'] ?? ''}',
+            name: element.querySelector('h3')?.text.trim() ??
+                'Unknown Product',
+            details: element.querySelector('.product-details')?.text.trim() ??
+                '',
+            description:
+                element.querySelector('.product-description')?.text.trim() ?? '',
+            imageUrl:
+                '$url/${element.querySelector('img')?.attributes['src'] ?? ''}',
+            // Scraped data doesn't include price/inventory; provide safe defaults.
+            price: 1500,
+            inventoryQuantity: 999999,
           );
         }).toList();
       }
@@ -356,11 +404,24 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
       var total = 0;
 
       for (final doc in cartSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final int qty = (data['quantity'] as num).toInt();
+        final int unitPrice = (data['unitPrice'] ?? 0) is num
+            ? (data['unitPrice'] as num).toInt()
+            : int.tryParse((data['unitPrice'] ?? '0').toString()) ?? 0;
+        final int totalPrice = (data['totalPrice'] ?? 0) is num
+            ? (data['totalPrice'] as num).toInt()
+            : unitPrice * qty;
+
         items.add({
           'productName': doc['productName'],
-          'quantity': doc['quantity'],
+          'productId': data['productId']?.toString(),
+          'quantity': qty,
+          'unitPrice': unitPrice,
+          'totalPrice': totalPrice,
+          'imageUrl': data['imageUrl']?.toString(),
         });
-        total += (doc['totalPrice'] as num).toInt();
+        total += totalPrice;
       }
 
       if (context.mounted) {
@@ -445,7 +506,7 @@ class _ProductCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
-                          product.price,
+                          product.price <= 0 ? 'Request Quote' : 'Rs.${product.price}/=',
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF214B2D),

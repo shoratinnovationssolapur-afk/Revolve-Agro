@@ -16,7 +16,9 @@ class ProductDetailsPage extends StatefulWidget {
 
 class _ProductDetailsPageState extends State<ProductDetailsPage> {
   int quantity = 1;
-  final int unitPrice = 1500;
+
+  int get _unitPrice => widget.product.price;
+  int get _maxQty => widget.product.inventoryQuantity;
 
   Future<void> _showPopup({
     required String title,
@@ -47,7 +49,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       return;
     }
 
-    final totalAmount = unitPrice * quantity;
+    if (_maxQty <= 0) {
+      await _showPopup(
+        title: 'Out of Stock',
+        message: 'This product is currently unavailable.',
+      );
+      return;
+    }
+
+    final safeQty = quantity.clamp(1, _maxQty);
+    final totalAmount = _unitPrice * safeQty;
     if (!mounted) return;
 
     Navigator.push(
@@ -58,6 +69,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             {
               'productName': widget.product.name,
               'quantity': quantity,
+              'productId': widget.product.id,
+              'unitPrice': _unitPrice,
+              'totalPrice': totalAmount,
+              'imageUrl': widget.product.imageUrl,
             }
           ],
           totalAmount: totalAmount,
@@ -77,13 +92,24 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       return;
     }
 
+    if (_maxQty <= 0) {
+      await _showPopup(
+        title: 'Out of Stock',
+        message: 'This product is currently unavailable.',
+      );
+      return;
+    }
+
+    final safeQty = quantity.clamp(1, _maxQty);
+
     try {
       await FirebaseFirestore.instance.collection('cart').add({
         'userId': user.uid,
+        'productId': widget.product.id,
         'productName': widget.product.name,
-        'quantity': quantity,
-        'unitPrice': unitPrice,
-        'totalPrice': unitPrice * quantity,
+        'quantity': safeQty,
+        'unitPrice': _unitPrice,
+        'totalPrice': _unitPrice * safeQty,
         'imageUrl': widget.product.imageUrl,
         'addedAt': FieldValue.serverTimestamp(),
         'status': 'in_cart',
@@ -183,7 +209,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final totalAmount = unitPrice * quantity;
+    final safeQty = _maxQty <= 0 ? 0 : quantity.clamp(1, _maxQty);
+    final totalAmount = _unitPrice * safeQty;
 
     return Scaffold(
       body: Container(
@@ -357,7 +384,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                     ),
                                   ),
                                 ),
-                                _quantityBtn(Icons.add_rounded, () => setState(() => quantity++)),
+                                _quantityBtn(Icons.add_rounded, () {
+                                  if (quantity < _maxQty) {
+                                    setState(() => quantity++);
+                                  }
+                                }),
                               ],
                             ),
                           ),
@@ -369,7 +400,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: _handleBuyNow,
+                            onPressed: _maxQty <= 0 ? null : _handleBuyNow,
                             icon: const Icon(Icons.flash_on_rounded),
                             label: const Text("Buy Now"),
                           ),
@@ -377,7 +408,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: _addToCart,
+                            onPressed: _maxQty <= 0 ? null : _addToCart,
                             icon: const Icon(Icons.shopping_bag_outlined),
                             label: const Text("Add to Cart"),
                           ),

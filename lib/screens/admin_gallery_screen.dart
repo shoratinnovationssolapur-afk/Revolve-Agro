@@ -16,6 +16,50 @@ class _AdminGalleryScreenState extends State<AdminGalleryScreen> {
   final CloudinaryService _cloudinaryService = CloudinaryService();
   bool _isUploading = false;
 
+  Future<void> _deleteMedia(QueryDocumentSnapshot<Map<String, dynamic>> doc) async {
+    final mediaName = (doc.data()['name'] ?? '').toString();
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete media?'),
+        content: Text(
+          mediaName.isNotEmpty ? 'Delete "$mediaName" from the gallery?' : 'Delete this media from the gallery?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('gallery').doc(doc.id).delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Media deleted successfully.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   // Function to handle the actual upload logic
   Future<void> _handleUpload(File file, String type) async {
     setState(() => _isUploading = true);
@@ -154,7 +198,7 @@ class _AdminGalleryScreenState extends State<AdminGalleryScreen> {
 
               // 🔥 LIVE GALLERY GRID FROM FIRESTORE
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: FirebaseFirestore.instance
                       .collection('gallery')
                       .orderBy('uploadedAt', descending: true)
@@ -187,25 +231,37 @@ class _AdminGalleryScreenState extends State<AdminGalleryScreen> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(20),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image.network(
-                                  // For videos, Cloudinary can generate a thumbnail by changing extension to .jpg
-                                  isVideo
-                                      ? media['url'].replaceAll('.mp4', '.jpg').replaceAll('.mov', '.jpg')
-                                      : media['url'],
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, e, s) => Container(
-                                    color: Colors.grey[300],
-                                    child: Icon(isVideo ? Icons.videocam : Icons.image, color: Colors.grey),
+                            child: GestureDetector(
+                              onLongPress: () => _deleteMedia(media),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.network(
+                                    // For videos, Cloudinary can generate a thumbnail by changing extension to .jpg
+                                    isVideo
+                                        ? media['url']
+                                            .replaceAll('.mp4', '.jpg')
+                                            .replaceAll('.mov', '.jpg')
+                                        : media['url'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, e, s) => Container(
+                                      color: Colors.grey[300],
+                                      child: Icon(
+                                        isVideo ? Icons.videocam : Icons.image,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                if (isVideo)
-                                  const Center(
-                                    child: Icon(Icons.play_circle_fill, color: Colors.white, size: 45),
-                                  ),
-                              ],
+                                  if (isVideo)
+                                    const Center(
+                                      child: Icon(
+                                        Icons.play_circle_fill,
+                                        color: Colors.white,
+                                        size: 45,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         );
