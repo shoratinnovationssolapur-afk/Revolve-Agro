@@ -29,7 +29,10 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   http: ^1.1.0
+  image_picker: ^1.0.7
+  video_player: ^2.8.1
   html: ^0.15.4
+
 
   flutter:
     sdk: flutter
@@ -46,6 +49,9 @@ dependencies:
   firebase_auth: ^6.3.0
   geolocator: ^14.0.2
   geocoding: ^4.0.0
+
+  photo_view: ^0.14.0
+
 
 dev_dependencies:
 

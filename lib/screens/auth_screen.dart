@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
-import 'AdminOrdersPage.dart';
+import 'admin_dashboard_page.dart';
 import 'product_list.dart';
 import 'welcome_screen.dart';
 
@@ -121,7 +121,9 @@ class _AuthScreenState extends State<AuthScreen> {
           if (actualRole == "Admin") {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+              MaterialPageRoute(
+                builder: (context) => const AdminDashboardPage(),
+              ),
             );
           } else {
             Navigator.pushReplacement(
@@ -152,8 +154,9 @@ class _AuthScreenState extends State<AuthScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  widget.role == "Admin" ? const AdminOrdersPage() : RevolveAgroProducts(),
+              builder: (context) => widget.role == "Admin"
+                  ? const AdminDashboardPage()
+                  : RevolveAgroProducts(),
             ),
           );
         }

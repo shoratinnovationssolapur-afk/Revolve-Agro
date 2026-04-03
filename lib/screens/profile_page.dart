@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
-import 'AdminOrdersPage.dart';
+import 'admin_dashboard_page.dart';
 import 'auth_screen.dart';
 import 'product_list.dart';
 import 'welcome_screen.dart';
@@ -81,7 +81,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _goToHome() {
     final Widget destination = widget.role == 'Admin'
-        ? const AdminOrdersPage()
+        ? const AdminDashboardPage()
         : RevolveAgroProducts();
 
     Navigator.pushAndRemoveUntil(
@@ -274,7 +274,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   }
                                 }
                               },
-                              activeColor: accent,
+                              activeThumbColor: accent,
                             ),
                     ),
                     const SizedBox(height: 12),
@@ -302,7 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   }
                                 }
                               },
-                              activeColor: accent,
+                              activeThumbColor: accent,
                             ),
                     ),
                     const SizedBox(height: 12),

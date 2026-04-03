@@ -445,25 +445,33 @@ class _PaymentPageState extends State<PaymentPage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final String prodName = currentItems[index]['productName'];
+    final item = currentItems[index];
+    final String prodName = item['productName']?.toString() ?? '';
+    final String? prodId = item['productId']?.toString();
+    final int qty = (item['quantity'] as num).toInt();
+    final int unitPrice = (item['unitPrice'] as num?)?.toInt() ??
+        ((item['totalPrice'] as num?)?.toInt() ?? (1500 * qty));
+    final int itemTotal =
+        (item['totalPrice'] as num?)?.toInt() ?? (unitPrice * qty);
 
     try {
       // Find the document in Firestore and delete it
-      final querySnapshot = await FirebaseFirestore.instance
+      QuerySnapshot<Map<String, dynamic>> querySnapshot;
+      final cartQuery = FirebaseFirestore.instance
           .collection('cart')
-          .where('userId', isEqualTo: user.uid)
-          .where('productName', isEqualTo: prodName)
-          .get();
+          .where('userId', isEqualTo: user.uid);
+
+      if (prodId != null && prodId.isNotEmpty) {
+        querySnapshot = await cartQuery.where('productId', isEqualTo: prodId).get();
+      } else {
+        querySnapshot = await cartQuery.where('productName', isEqualTo: prodName).get();
+      }
 
       for (var doc in querySnapshot.docs) {
         await doc.reference.delete();
       }
 
       setState(() {
-        // Subtract the price of the removed item
-        // Note: This assumes your map has 'totalPrice' or similar.
-        // If not, we calculate using unitPrice * quantity
-        int itemTotal = (currentItems[index]['quantity'] * 1500); // Using your fixed price 1500
         currentTotal -= itemTotal;
         currentItems.removeAt(index);
       });
@@ -473,6 +481,46 @@ class _PaymentPageState extends State<PaymentPage> {
       );
     } catch (e) {
       debugPrint("Error removing item: $e");
+    }
+  }
+
+  Future<void> _decrementInventoryForOrder() async {
+    final Map<String, int> productIdToQty = {};
+
+    for (final item in currentItems) {
+      final pid = item['productId']?.toString();
+      if (pid == null || pid.isEmpty) continue;
+
+      final qty = (item['quantity'] as num?)?.toInt() ?? 0;
+      if (qty <= 0) continue;
+
+      productIdToQty[pid] = (productIdToQty[pid] ?? 0) + qty;
+    }
+
+    if (productIdToQty.isEmpty) return;
+
+    for (final entry in productIdToQty.entries) {
+      final pid = entry.key;
+      final qty = entry.value;
+
+      await FirebaseFirestore.instance.runTransaction((txn) async {
+        final productRef = FirebaseFirestore.instance.collection('products').doc(pid);
+        final productSnap = await txn.get(productRef);
+        if (!productSnap.exists) return;
+
+        final data = productSnap.data();
+        final currentInvRaw = data?['inventoryQuantity'] ?? 0;
+        final currentInv = currentInvRaw is num
+            ? currentInvRaw.toInt()
+            : int.tryParse(currentInvRaw.toString()) ?? 0;
+
+        final nextInv = (currentInv - qty) < 0 ? 0 : currentInv - qty;
+
+        txn.update(productRef, {
+          'inventoryQuantity': nextInv,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
     }
   }
 
@@ -525,6 +573,12 @@ class _PaymentPageState extends State<PaymentPage> {
       }
 
       await batch.commit();
+
+      try {
+        await _decrementInventoryForOrder();
+      } catch (e) {
+        debugPrint('Inventory decrement failed: $e');
+      }
 
       if (context.mounted) {
         // 3. Navigate to the Success Screen
