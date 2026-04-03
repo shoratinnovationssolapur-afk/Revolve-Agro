@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
@@ -11,17 +12,7 @@ class PaymentSuccessScreen extends StatelessWidget {
     final l10n = context.l10n;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFEAF5DE),
-              Color(0xFFF7F3E8),
-            ],
-          ),
-        ),
+      body: AppShell(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -39,13 +30,15 @@ class PaymentSuccessScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  height: 160,
-                  width: 160,
+                  padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2F6A3E), Color(0xFF6CAA58)],
-                    ),
                     shape: BoxShape.circle,
+                    gradient: const RadialGradient(
+                      colors: [
+                        Color(0xFF7CB961),
+                        Color(0xFF2F6A3E),
+                      ],
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFF2F6A3E).withOpacity(0.22),
@@ -54,7 +47,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.check_rounded, size: 90, color: Colors.white),
+                  child: const Icon(Icons.check_rounded, size: 96, color: Colors.white),
                 ),
                 const SizedBox(height: 32),
                 Text(
@@ -77,12 +70,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(26),
-                  ),
+                AppGlassCard(
                   child: Row(
                     children: [
                       const Icon(Icons.local_shipping_outlined, color: Color(0xFFD9952E)),
