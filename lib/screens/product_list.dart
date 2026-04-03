@@ -308,7 +308,7 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                                 ),
                                 const SizedBox(height: 20),
                                 SizedBox(
-                                  height: 122,
+                                  height: 132,
                                   child: ListView.separated(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: _categories.length,
@@ -519,10 +519,11 @@ class _ProductCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
-                          product.price <= 0 ? 'Request Quote' : 'Rs.${product.price}/=',
+                          product.price <= 0 ? 'Request Quote' : 'Rs.${product.price}',
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF214B2D),
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -537,6 +538,8 @@ class _ProductCard extends StatelessWidget {
                   children: [
                     Text(
                       product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -546,6 +549,8 @@ class _ProductCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       product.details,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF2F6A3E),
@@ -559,32 +564,55 @@ class _ProductCard extends StatelessWidget {
                       style: TextStyle(color: Colors.grey.shade700, height: 1.45),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProductDetailsPage(product: product),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isSmallScreen = constraints.maxWidth < 360;
+                        return Row(
+                          children: [
+                            Expanded(
+                              flex: isSmallScreen ? 3 : 4,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailsPage(product: product),
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
                                 ),
-                              );
-                            },
-                            child: Text(context.l10n.text('view_details')),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          height: 52,
-                          width: 52,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F2DF),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF2F6A3E)),
-                        ),
-                      ],
+                                child: Text(
+                                  context.l10n.text('view_details'),
+                                  style: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              height: 52,
+                              width: isSmallScreen ? 44 : 52,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F2DF),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailsPage(product: product),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF2F6A3E)),
+                                iconSize: isSmallScreen ? 20 : 24,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),

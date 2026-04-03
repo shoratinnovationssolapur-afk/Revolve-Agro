@@ -549,6 +549,7 @@ class _PaymentPageState extends State<PaymentPage> {
       // 1. Fetch User Name from Firestore 'users' collection
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       String userName = userDoc.data()?['name'] ?? "Unknown User";
+      String userEmail = user.email ?? "Unknown Email";
 
       final cartSnapshot = await FirebaseFirestore.instance
           .collection('cart')
@@ -562,6 +563,7 @@ class _PaymentPageState extends State<PaymentPage> {
       batch.set(orderRef, {
         'userId': user.uid,
         'userName': userName, // CRITICAL for Admin side filtering
+        'userEmail': userEmail,
         'products': currentItems,
         'totalAmount': currentTotal,
         'deliveryType': deliveryType,
@@ -571,9 +573,10 @@ class _PaymentPageState extends State<PaymentPage> {
           'city': city,
           'pincode': pincode,
         },
-        'status': 'Processing',
+        'status': 'pending',
         'paymentStatus': 'Paid',
         'timestamp': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       for (var doc in cartSnapshot.docs) {
