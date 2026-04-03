@@ -8,6 +8,8 @@ import 'profile_page.dart';
 import 'payment_page.dart';
 
 class UserDashboard extends StatefulWidget {
+  const UserDashboard({super.key});
+
   @override
   State<UserDashboard> createState() => _UserDashboardState();
 }

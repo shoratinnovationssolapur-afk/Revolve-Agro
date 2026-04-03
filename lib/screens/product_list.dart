@@ -34,6 +34,8 @@ class Product {
 }
 
 class RevolveAgroProducts extends StatefulWidget {
+  const RevolveAgroProducts({super.key});
+
   @override
   State<RevolveAgroProducts> createState() => _RevolveAgroProductsState();
 }
@@ -404,7 +406,7 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
       var total = 0;
 
       for (final doc in cartSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final int qty = (data['quantity'] as num).toInt();
         final int unitPrice = (data['unitPrice'] ?? 0) is num
             ? (data['unitPrice'] as num).toInt()
