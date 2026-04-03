@@ -8,8 +8,9 @@ import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
 import 'admin_dashboard_page.dart';
 import 'auth_screen.dart';
-import 'product_list.dart';
 import 'role_selection_screen.dart';
+import 'super_admin_dashboard_page.dart';
+import 'user_dashboard.dart';
 
 class WelcomeScreen extends StatefulWidget {
   final String? preferredRole;
@@ -36,6 +37,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -68,6 +70,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       parent: _introController,
       curve: const Interval(0.22, 0.9, curve: Curves.easeOut),
     );
+
+    // Trigger auto-login check after a short delay for animations
+    if (widget.firebaseReady) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) _checkAutoLogin();
+      });
+    }
+  }
+
+  Future<void> _checkAutoLogin() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      await _handleContinue();
+    }
   }
 
   @override
@@ -96,6 +112,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
         return;
       }
+      if (widget.preferredRole == 'SuperAdmin') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AuthScreen(role: 'SuperAdmin'),
+          ),
+        );
+        return;
+      }
       if (widget.preferredRole == 'User') {
         Navigator.push(
           context,
@@ -121,7 +146,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
       if (!mounted) return;
 
-      if (role == 'Admin') {
+      if (role == 'SuperAdmin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SuperAdminDashboardPage(),
+          ),
+        );
+      } else if (role == 'Admin') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -131,7 +163,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => RevolveAgroProducts()),
+          MaterialPageRoute(builder: (context) => const UserDashboard()),
         );
       }
     } catch (e) {
@@ -414,7 +446,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                                     Navigator.push(
                                                       context,
                                                       MaterialPageRoute(
-                                                        builder: (context) => RevolveAgroProducts(),
+                                                        builder: (context) => const UserDashboard(),
                                                       ),
                                                     );
                                                   }
