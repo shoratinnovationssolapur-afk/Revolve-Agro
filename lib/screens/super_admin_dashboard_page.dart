@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/language_selector.dart';
 import 'admin_manage_products_page.dart';
 import 'admin_orders_page.dart';
 import 'manage_admins_page.dart';
-import '../widgets/language_selector.dart';
 import 'welcome_screen.dart';
 
-class AdminDashboardPage extends StatelessWidget {
-  const AdminDashboardPage({super.key});
+class SuperAdminDashboardPage extends StatelessWidget {
+  const SuperAdminDashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class AdminDashboardPage extends StatelessWidget {
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF183020), Color(0xFF30523B)],
+                      colors: [Color(0xFF2A1638), Color(0xFF4B2A63)],
                     ),
                     borderRadius: BorderRadius.circular(30),
                   ),
@@ -43,8 +43,9 @@ class AdminDashboardPage extends StatelessWidget {
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const WelcomeScreen(preferredRole: 'Admin'),
+                              builder: (context) => const WelcomeScreen(
+                                preferredRole: 'SuperAdmin',
+                              ),
                             ),
                             (route) => false,
                           );
@@ -52,11 +53,11 @@ class AdminDashboardPage extends StatelessWidget {
                         icon: const Icon(Icons.arrow_back_rounded),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
+                      const Expanded(
                         child: Text(
-                          'Admin Dashboard',
-                          style: const TextStyle(
-                            fontSize: 26,
+                          'Super Admin Dashboard',
+                          style: TextStyle(
+                            fontSize: 24,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                           ),
@@ -83,10 +84,10 @@ class AdminDashboardPage extends StatelessWidget {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.group_remove_outlined),
-                        label: const Text('Manage Members'),
+                        icon: const Icon(Icons.supervised_user_circle_rounded),
+                        label: const Text('Manage Admins'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4A5A2F),
+                          backgroundColor: const Color(0xFF4B2A63),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
@@ -139,7 +140,7 @@ class AdminDashboardPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Add and edit products with price and inventory quantity.',
+                        'Manage members, admins, orders, and products.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey.shade700,

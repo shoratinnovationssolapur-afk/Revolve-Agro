@@ -7,6 +7,7 @@ import '../widgets/language_selector.dart';
 import 'admin_dashboard_page.dart';
 import 'auth_screen.dart';
 import 'product_list.dart';
+import 'super_admin_dashboard_page.dart';
 import 'welcome_screen.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -80,9 +81,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _goToHome() {
-    final Widget destination = widget.role == 'Admin'
-        ? const AdminDashboardPage()
-        : RevolveAgroProducts();
+    final Widget destination = widget.role == 'SuperAdmin'
+        ? const SuperAdminDashboardPage()
+        : (widget.role == 'Admin'
+            ? const AdminDashboardPage()
+            : RevolveAgroProducts());
 
     Navigator.pushAndRemoveUntil(
       context,
@@ -104,7 +107,10 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final isAdmin = widget.role == 'Admin';
-    final accent = isAdmin ? const Color(0xFF8C5B1C) : const Color(0xFF2F6A3E);
+    final isSuperAdmin = widget.role == 'SuperAdmin';
+    final accent = isSuperAdmin
+        ? const Color(0xFF4B2A63)
+        : (isAdmin ? const Color(0xFF8C5B1C) : const Color(0xFF2F6A3E));
     final l10n = context.l10n;
 
     return Scaffold(

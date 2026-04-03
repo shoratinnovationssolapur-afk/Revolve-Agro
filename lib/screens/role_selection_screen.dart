@@ -40,10 +40,8 @@ class RoleSelectionScreen extends StatelessWidget {
                   child: LanguageSelector(),
                 ),
                 const SizedBox(height: 18),
-
-                /// 🔥 TITLE CHANGED (ONLY THIS LINE MODIFIED)
-                const Text(
-                  "Welcome to Revolve Agro",
+                Text(
+                  l10n.text('choose_experience_title'),
                   style: TextStyle(
                     fontSize: 32,
                     height: 1.05,
@@ -51,10 +49,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     color: Color(0xFF183020),
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
-                /// ❌ subtitle NOT changed (as you didn’t ask)
                 Text(
                   l10n.text('choose_experience_subtitle'),
                   style: TextStyle(
@@ -63,88 +58,74 @@ class RoleSelectionScreen extends StatelessWidget {
                     color: Colors.grey.shade700,
                   ),
                 ),
-
                 const SizedBox(height: 26),
-
                 Expanded(
-                  child: Column(
-                    children: [
-
-                      /// 👤 USER
-                      _RoleCard(
-                        title: l10n.text('user_login'),
-                        subtitle: l10n.text('user_login_subtitle'),
-                        icon: Icons.person_outline_rounded,
-                        accent: const Color(0xFF2F6A3E),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "User"),
-                            ),
-                          );
-                        },
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      /// 🛠 ADMIN
-                      _RoleCard(
-                        title: l10n.text('admin_login'),
-                        subtitle: l10n.text('admin_login_subtitle'),
-                        icon: Icons.admin_panel_settings_outlined,
-                        accent: const Color(0xFFD9952E),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "Admin"),
-                            ),
-                          );
-                        },
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      /// 🔥 NEW SUPER ADMIN (ADDED ONLY)
-                      _RoleCard(
-                        title: "Super Admin Login",
-                        subtitle: "Manage admins, control platform and monitor system activity.",
-                        icon: Icons.workspace_premium_outlined,
-                        accent: const Color(0xFF6A5ACD),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "SuperAdmin"),
-                            ),
-                          );
-                        },
-                      ),
-
-                      const Spacer(),
-
-                      /// FOOTER (UNCHANGED)
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.88),
-                          borderRadius: BorderRadius.circular(26),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _RoleCard(
+                          title: l10n.text('user_login'),
+                          subtitle: l10n.text('user_login_subtitle'),
+                          icon: Icons.person_outline_rounded,
+                          accent: const Color(0xFF2F6A3E),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AuthScreen(role: "User")),
+                            );
+                          },
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                l10n.text('multilingual_support'),
-                                style: const TextStyle(height: 1.45),
+                        const SizedBox(height: 18),
+                        _RoleCard(
+                          title: l10n.text('admin_login'),
+                          subtitle: l10n.text('admin_login_subtitle'),
+                          icon: Icons.admin_panel_settings_outlined,
+                          accent: const Color(0xFFD9952E),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AuthScreen(role: "Admin")),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        _RoleCard(
+                          title: 'Super Admin',
+                          subtitle: 'Manage members and admins',
+                          icon: Icons.security_rounded,
+                          accent: const Color(0xFF4B2A63),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                const AuthScreen(role: "SuperAdmin"),
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 18),
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.88),
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  l10n.text('multilingual_support'),
+                                  style: const TextStyle(height: 1.45),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
