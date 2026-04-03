@@ -398,12 +398,16 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
           .where('userId', isEqualTo: user.uid)
           .get();
 
-      Navigator.pop(context);
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
 
       if (cartSnapshot.docs.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.text('no_items_added_cart'))),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.text('no_items_added_cart'))),
+          );
+        }
         return;
       }
 
@@ -443,10 +447,12 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
         );
       }
     } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.textWithArgs('error_fetching_cart', {'error': '$e'}))),
-      );
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.textWithArgs('error_fetching_cart', {'error': '$e'}))),
+        );
+      }
     }
   }
 }
