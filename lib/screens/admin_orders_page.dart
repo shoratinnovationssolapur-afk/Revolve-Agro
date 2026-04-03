@@ -32,6 +32,7 @@ class AdminOrdersPage extends StatelessWidget {
             children: [
 
               // HEADER
+// Replace the current Header Padding block with this simplified version:
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                 child: Container(
@@ -44,99 +45,30 @@ class AdminOrdersPage extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-
-                      // TOP ROW
-                      Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        spacing: 8,
-                        runSpacing: 8,
+                      Row(
                         children: [
-
-                          // BACK
                           IconButton.filledTonal(
-                            onPressed: () {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                  const WelcomeScreen(preferredRole: 'Admin'),
-                                ),
-                                    (route) => false,
-                              );
-                            },
+                            onPressed: () => Navigator.pop(context), // Simple back to Dashboard
                             icon: const Icon(Icons.arrow_back_rounded),
                           ),
-
-                          const SizedBox(width: 8),
-
-                          // ✅ NEW GALLERY BUTTON
-                          IconButton.filledTonal(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminGalleryScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.photo_library_outlined),
-                          ),
-
-                          // Manage products
-                          IconButton.filledTonal(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const AdminManageProductsPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.inventory_2_outlined),
-                          ),
-                          
-                          // LANGUAGE
-                          const LanguageSelector(),
-
-                          // PROFILE
-                          IconButton.filledTonal(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ProfilePage(role: 'Admin'),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.admin_panel_settings_rounded),
+                          const SizedBox(width: 15),
+                          Text(
+                            l10n.text('incoming_orders'), // Or "Orders"
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 20),
-
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          l10n.text('incoming_orders'),
-                          style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
+                      const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           l10n.text('incoming_orders_subtitle'),
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.82), // ✅ fixed
+                            color: Colors.white.withOpacity(0.82),
                             height: 1.45,
                           ),
                         ),
