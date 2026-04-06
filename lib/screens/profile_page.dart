@@ -33,9 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _updateSetting(String key, bool value) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return;
-    }
+    if (user == null) return;
 
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       key: value,
@@ -62,35 +60,32 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
 
-    if (shouldLogout != true) {
-      return;
-    }
+    if (shouldLogout != true) return;
 
     await FirebaseAuth.instance.signOut();
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder: (context) => AuthScreen(role: widget.role),
-      ),
-      (route) => false,
+      MaterialPageRoute(builder: (context) => AuthScreen(role: widget.role)),
+          (route) => false,
     );
   }
 
   void _goToHome() {
-    final Widget destination = widget.role == 'SuperAdmin'
-        ? const SuperAdminDashboardPage()
-        : (widget.role == 'Admin'
-            ? const AdminDashboardPage()
-            : RevolveAgroProducts());
+    Widget destination;
+    if (widget.role == 'SuperAdmin') {
+      destination = const SuperAdminDashboardPage();
+    } else if (widget.role == 'Admin') {
+      destination = const AdminDashboardPage();
+    } else {
+      destination = RevolveAgroProducts();
+    }
 
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => destination),
-      (route) => false,
+          (route) => false,
     );
   }
 
@@ -100,7 +95,7 @@ class _ProfilePageState extends State<ProfilePage> {
       MaterialPageRoute(
         builder: (context) => WelcomeScreen(preferredRole: widget.role),
       ),
-      (route) => false,
+          (route) => false,
     );
   }
 
@@ -108,6 +103,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final isAdmin = widget.role == 'Admin';
     final isSuperAdmin = widget.role == 'SuperAdmin';
+    final isAnyAdmin = isAdmin || isSuperAdmin;
+
     final accent = isSuperAdmin
         ? const Color(0xFF4B2A63)
         : (isAdmin ? const Color(0xFF8C5B1C) : const Color(0xFF2F6A3E));
@@ -139,7 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
               final email = data['email']?.toString().trim();
               final phone = data['phone']?.toString().trim();
               final notificationsEnabled = data['notificationsEnabled'] as bool? ?? true;
-              final locationEnabled = data['locationEnabled'] as bool? ?? !isAdmin;
+              final locationEnabled = data['locationEnabled'] as bool? ?? !isAnyAdmin;
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
@@ -175,7 +172,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             radius: 34,
                             backgroundColor: Colors.white.withOpacity(0.2),
                             child: Icon(
-                              isAdmin ? Icons.admin_panel_settings_rounded : Icons.person_rounded,
+                              isSuperAdmin
+                                  ? Icons.verified_user_rounded
+                                  : (isAdmin ? Icons.admin_panel_settings_rounded : Icons.person_rounded),
                               size: 34,
                               color: Colors.white,
                             ),
@@ -259,57 +258,59 @@ class _ProfilePageState extends State<ProfilePage> {
                     _SettingTile(
                       icon: Icons.notifications_active_outlined,
                       title: l10n.text('notifications'),
-                      subtitle: isAdmin
+                      subtitle: isAnyAdmin
                           ? l10n.text('admin_notifications_subtitle')
                           : l10n.text('user_notifications_subtitle'),
                       trailing: _savingNotifications
                           ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                           : Switch(
-                              value: notificationsEnabled,
-                              onChanged: (value) async {
-                                setState(() => _savingNotifications = true);
-                                try {
-                                  await _updateSetting('notificationsEnabled', value);
-                                } finally {
-                                  if (mounted) {
-                                    setState(() => _savingNotifications = false);
-                                  }
-                                }
-                              },
-                              activeColor: accent,
-                            ),
+                        value: notificationsEnabled,
+                        onChanged: (value) async {
+                          setState(() => _savingNotifications = true);
+                          try {
+                            await _updateSetting('notificationsEnabled', value);
+                          } finally {
+                            if (mounted) {
+                              setState(() => _savingNotifications = false);
+                            }
+                          }
+                        },
+                        activeColor: accent,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _SettingTile(
-                      icon: isAdmin ? Icons.campaign_outlined : Icons.my_location_rounded,
-                      title: isAdmin ? l10n.text('order_alerts') : l10n.text('location_access'),
-                      subtitle: isAdmin
-                          ? l10n.text('order_alerts_subtitle')
+                      icon: isAnyAdmin ? Icons.campaign_outlined : Icons.my_location_rounded,
+                      title: isAnyAdmin ? l10n.text('order_alerts') : l10n.text('location_access'),
+                      subtitle: isAnyAdmin
+                          ? (isSuperAdmin
+                          ? "Receive notifications for all platform activity"
+                          : l10n.text('order_alerts_subtitle'))
                           : l10n.text('location_access_subtitle'),
                       trailing: _savingLocation
                           ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                           : Switch(
-                              value: locationEnabled,
-                              onChanged: (value) async {
-                                setState(() => _savingLocation = true);
-                                try {
-                                  await _updateSetting('locationEnabled', value);
-                                } finally {
-                                  if (mounted) {
-                                    setState(() => _savingLocation = false);
-                                  }
-                                }
-                              },
-                              activeColor: accent,
-                            ),
+                        value: locationEnabled,
+                        onChanged: (value) async {
+                          setState(() => _savingLocation = true);
+                          try {
+                            await _updateSetting('locationEnabled', value);
+                          } finally {
+                            if (mounted) {
+                              setState(() => _savingLocation = false);
+                            }
+                          }
+                        },
+                        activeColor: accent,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _SettingTile(
@@ -322,9 +323,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     ElevatedButton.icon(
                       onPressed: _goToHome,
                       style: ElevatedButton.styleFrom(backgroundColor: accent),
-                      icon: const Icon(Icons.space_dashboard_outlined),
+                      icon: Icon(isSuperAdmin ? Icons.admin_panel_settings_outlined : Icons.space_dashboard_outlined),
                       label: Text(
-                        isAdmin ? l10n.text('go_to_admin_dashboard') : l10n.text('go_to_marketplace'),
+                        isSuperAdmin
+                            ? "Go to Super Admin Dashboard"
+                            : (isAdmin ? l10n.text('go_to_admin_dashboard') : l10n.text('go_to_marketplace')),
                       ),
                     ),
                     const SizedBox(height: 12),

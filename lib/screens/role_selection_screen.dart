@@ -65,6 +65,7 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
+                      /// 🛠 ADMIN
                       _RoleCard(
                         title: l10n.text('admin_login'),
                         subtitle: l10n.text('admin_login_subtitle'),
@@ -103,16 +104,41 @@ class RoleSelectionScreen extends StatelessWidget {
                       const SizedBox(height: 18),
 
                       AppGlassCard(
-                        child: Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.language_rounded,
-                                color: Color(0xFF2F6A3E)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                l10n.text('multilingual_support'),
-                                style: const TextStyle(height: 1.45),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.language_rounded,
+                                    color: Color(0xFF2F6A3E)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    l10n.text('multilingual_support'),
+                                    style: const TextStyle(height: 1.45),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.88),
+                                borderRadius: BorderRadius.circular(26),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      l10n.text('multilingual_support'),
+                                      style: const TextStyle(height: 1.45),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

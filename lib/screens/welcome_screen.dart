@@ -37,7 +37,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
-
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -70,20 +69,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       parent: _introController,
       curve: const Interval(0.22, 0.9, curve: Curves.easeOut),
     );
-
-    // Trigger auto-login check after a short delay for animations
-    if (widget.firebaseReady) {
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _checkAutoLogin();
-      });
-    }
-  }
-
-  Future<void> _checkAutoLogin() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      await _handleContinue();
-    }
   }
 
   @override

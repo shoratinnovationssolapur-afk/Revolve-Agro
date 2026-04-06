@@ -202,7 +202,7 @@ class AppPageHeader extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              if (leading != null) leading!,
+              ?leading,
               if (actions.isNotEmpty)
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 260),
