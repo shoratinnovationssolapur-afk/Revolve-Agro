@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.flutter_application1">
-
-=======
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -14,7 +9,6 @@
             <data android:scheme="tel" />
         </intent>
     </queries>
->>>>>>> a097ec79059626f4258e97ebf8a5f1160a58e203
     <application
         android:label="flutter_application1"
         android:name="${applicationName}"

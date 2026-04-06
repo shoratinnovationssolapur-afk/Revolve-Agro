@@ -23,7 +23,10 @@ android {
     defaultConfig {
         applicationId = "com.example.revolveagro"
         minSdk = flutter.minSdkVersion
+<<<<<<< HEAD
+=======
         // 🔥 Reverted to Flutter variables for stability
+>>>>>>> 95bb79e1321aac645311b169993deaf3f46ae860
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

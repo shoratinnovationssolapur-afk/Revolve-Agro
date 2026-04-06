@@ -31,7 +31,6 @@ class RoleSelectionScreen extends StatelessWidget {
                         icon: const Icon(Icons.arrow_back_rounded),
                       ),
                       const SizedBox(height: 10),
-
                       const Align(
                         alignment: Alignment.centerRight,
                         child: LanguageSelector(),
@@ -61,7 +60,6 @@ class RoleSelectionScreen extends StatelessWidget {
                           );
                         },
                       ),
-
                       const SizedBox(height: 18),
 
                       // Admin Card
@@ -79,15 +77,14 @@ class RoleSelectionScreen extends StatelessWidget {
                           );
                         },
                       ),
-
                       const SizedBox(height: 18),
 
                       // Super Admin Card
                       _RoleCard(
-                        title: 'Super Admin',
-                        subtitle: 'Manage admins, control the platform, and monitor activity.',
-                        icon: Icons.security_rounded,
-                        accent: const Color(0xFF4B2A63),
+                       title: l10n.text('super_admin_login'),
+                        subtitle: l10n.text('super_admin_login_subtitle'),
+                        icon: Icons.workspace_premium_outlined,
+                        accent: const Color(0xFF6A5ACD),
                         onTap: () {
                           Navigator.push(
                             context,
