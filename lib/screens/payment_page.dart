@@ -558,8 +558,9 @@ class _PaymentPageState extends State<PaymentPage> {
 
       WriteBatch batch = FirebaseFirestore.instance.batch();
       DocumentReference orderRef = FirebaseFirestore.instance.collection('orders').doc();
+      final timestamp = DateTime.now();
 
-      // 2. Add 'userName' to the order document
+      // 2. Add 'userName' to the order document with status history
       batch.set(orderRef, {
         'userId': user.uid,
         'userName': userName, // CRITICAL for Admin side filtering
@@ -577,6 +578,15 @@ class _PaymentPageState extends State<PaymentPage> {
         'paymentStatus': 'Paid',
         'timestamp': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
+        // New fields for enhanced order management
+        'statusHistory': [
+          {
+            'status': 'pending',
+            'timestamp': timestamp,
+          }
+        ],
+        'trackingStatus': 'none',
+        'rejectionReason': null,
       });
 
       for (var doc in cartSnapshot.docs) {

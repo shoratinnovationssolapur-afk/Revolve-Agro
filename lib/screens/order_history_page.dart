@@ -186,6 +186,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                                     (orderData['products'] as List?)?.length ??
                                         0,
                                 orderDate: timestamp,
+                                rejectionReason: orderData['rejectionReason'],
+                                trackingStatus: orderData['trackingStatus'] ?? 'none',
+                                statusHistory: (orderData['statusHistory'] as List?) ?? [],
                               );
                             },
                           );
@@ -213,23 +216,37 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   }
 }
 
-class OrderStatusCard extends StatelessWidget {
+class OrderStatusCard extends StatefulWidget {
   final String orderId;
   final String status;
   final String totalAmount;
   final int productCount;
   final DateTime? orderDate;
+  final String? rejectionReason;
+  final String trackingStatus;
+  final List<dynamic> statusHistory;
 
   const OrderStatusCard({
+    super.key,
     required this.orderId,
     required this.status,
     required this.totalAmount,
     required this.productCount,
     this.orderDate,
+    this.rejectionReason,
+    this.trackingStatus = 'none',
+    this.statusHistory = const [],
   });
 
+  @override
+  State<OrderStatusCard> createState() => _OrderStatusCardState();
+}
+
+class _OrderStatusCardState extends State<OrderStatusCard> {
+  bool _expandedTimeline = false;
+
   Color _getStatusColor() {
-    switch (status) {
+    switch (widget.status) {
       case 'approved':
         return Colors.green;
       case 'rejected':
@@ -240,7 +257,7 @@ class OrderStatusCard extends StatelessWidget {
   }
 
   String _getStatusMessage() {
-    switch (status) {
+    switch (widget.status) {
       case 'approved':
         return 'Your order has been approved!';
       case 'rejected':
@@ -251,13 +268,39 @@ class OrderStatusCard extends StatelessWidget {
   }
 
   IconData _getStatusIcon() {
-    switch (status) {
+    switch (widget.status) {
       case 'approved':
         return Icons.check_circle_outline;
       case 'rejected':
         return Icons.cancel_outlined;
       default:
         return Icons.schedule_outlined;
+    }
+  }
+
+  String _getTrackingStatusLabel() {
+    switch (widget.trackingStatus) {
+      case 'processing':
+        return 'Processing';
+      case 'shipped':
+        return 'Shipped';
+      case 'delivered':
+        return 'Delivered';
+      default:
+        return 'Not Yet Started';
+    }
+  }
+
+  IconData _getTrackingIcon() {
+    switch (widget.trackingStatus) {
+      case 'processing':
+        return Icons.hourglass_bottom;
+      case 'shipped':
+        return Icons.local_shipping;
+      case 'delivered':
+        return Icons.done_all;
+      default:
+        return Icons.pending_outlined;
     }
   }
 
@@ -280,7 +323,7 @@ class OrderStatusCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Order #$orderId',
+                        'Order #${widget.orderId}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.grey,
@@ -288,9 +331,9 @@ class OrderStatusCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      if (orderDate != null)
+                      if (widget.orderDate != null)
                         Text(
-                          'Placed on ${_formatDate(orderDate!)}',
+                          'Placed on ${_formatDate(widget.orderDate!)}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -316,7 +359,7 @@ class OrderStatusCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        status.toUpperCase(),
+                        widget.status.toUpperCase(),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -359,18 +402,96 @@ class OrderStatusCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
+            // Rejection Reason (if rejected)
+            if (widget.rejectionReason != null && 
+                widget.rejectionReason!.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Rejection Reason:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.rejectionReason!,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Tracking Status (if approved)
+            if (widget.status == 'approved' && widget.trackingStatus != 'none') ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getTrackingIcon(),
+                      color: Colors.blue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Delivery Status:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _getTrackingStatusLabel(),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // Order details
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '$productCount item${productCount != 1 ? 's' : ''}',
+                  '${widget.productCount} item${widget.productCount != 1 ? 's' : ''}',
                   style: const TextStyle(
                     fontSize: 14,
                   ),
                 ),
                 Text(
-                  'Total: \$${double.parse(totalAmount).toStringAsFixed(2)}',
+                  'Total: \$${double.parse(widget.totalAmount).toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -378,6 +499,136 @@ class OrderStatusCard extends StatelessWidget {
                 ),
               ],
             ),
+
+            // Status Timeline
+            if (widget.statusHistory.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () {
+                  setState(() => _expandedTimeline = !_expandedTimeline);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.history, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Order Timeline',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      Icon(
+                        _expandedTimeline
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_expandedTimeline) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...List.generate(widget.statusHistory.length, (index) {
+                        final item = widget.statusHistory[index] as Map<String, dynamic>?;
+                        if (item == null) return const SizedBox.shrink();
+
+                        final itemStatus = item['status'] ?? 'unknown';
+                        final itemTimestamp = item['timestamp'];
+                        final itemReason = item['reason'];
+
+                        String timeStr = 'N/A';
+                        if (itemTimestamp is Timestamp) {
+                          final dateTime = itemTimestamp.toDate();
+                          timeStr =
+                              '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+                        }
+
+                        final statusColor = itemStatus == 'approved'
+                            ? Colors.green
+                            : itemStatus == 'rejected'
+                                ? Colors.red
+                                : Colors.orange;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      itemStatus.toUpperCase(),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      timeStr,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    if (itemReason != null &&
+                                        itemReason.toString().isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          'Reason: ${itemReason.toString()}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ],
         ),
       ),
