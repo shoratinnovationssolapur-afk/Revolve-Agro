@@ -19,15 +19,10 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-<<<<<<< HEAD
-    id("com.android.application") version "8.9.1" apply false
-    // START: FlutterFire Configuration
-    id("com.google.gms.google-services") version("4.3.15") apply false
-=======
+    // 🔥 UPDATED to the newer version (8.11.1) from the incoming branch
     id("com.android.application") version "8.11.1" apply false
     // START: FlutterFire Configuration
     id("com.google.gms.google-services") version "4.3.15" apply false
->>>>>>> a097ec79059626f4258e97ebf8a5f1160a58e203
     // END: FlutterFire Configuration
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
