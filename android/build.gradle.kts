@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 plugins {
    id("com.android.application") apply false
    id("com.android.library") apply false
@@ -8,7 +6,6 @@ plugins {
    id("com.google.gms.google-services") apply false
 }
 
->>>>>>> 4de844c681abb2fbeb86804d77c2f9ebf4a02000
 allprojects {
     repositories {
         google()

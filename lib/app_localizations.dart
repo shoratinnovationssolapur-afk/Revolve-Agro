@@ -46,8 +46,11 @@ class AppLocalizations {
           'Farmers and admins get tailored dashboards, faster actions, and a smoother purchase journey.',
       'user_login': 'User Login',
       'admin_login': 'Admin Login',
+      'super_admin_login': 'Super Admin Login',
       'user_login_subtitle': 'Browse products, manage your cart, and checkout with delivery details.',
       'admin_login_subtitle': 'Track incoming orders, customer addresses, and overall order activity.',
+      'super_admin_login_subtitle': 'Manage all admin functionalities and system-wide settings.',
+
       'multilingual_support':
           'Available for multilingual agriculture support and faster team coordination.',
       'startup_hint': 'We are preparing your account, products, and settings in the background.',
@@ -260,6 +263,8 @@ class AppLocalizations {
       'admin_login': 'अॅडमिन लॉगिन',
       'user_login_subtitle': 'उत्पादने पाहा, कार्ट व्यवस्थापित करा आणि डिलिव्हरी तपशीलांसह चेकआउट करा.',
       'admin_login_subtitle': 'आलेले ऑर्डर्स, ग्राहक पत्ते आणि एकूण ऑर्डर क्रियाकलाप पहा.',
+      'super_admin_login': 'सुपर अॅडमिन लॉगिन',
+      'super_admin_login_subtitle': 'सर्व अॅडमिन कार्यक्षमता आणि संपूर्ण सिस्टम सेटिंग्ज व्यवस्थापित करा.',
       'multilingual_support': 'बहुभाषिक शेती सहाय्य आणि जलद टीम समन्वयासाठी उपलब्ध.',
       'admin_workspace': 'अॅडमिन कार्यक्षेत्र',
       'farmer_workspace': 'शेतकरी कार्यक्षेत्र',

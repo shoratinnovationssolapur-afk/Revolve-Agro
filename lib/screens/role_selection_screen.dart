@@ -80,9 +80,8 @@ class RoleSelectionScreen extends StatelessWidget {
                       const SizedBox(height: 18),
 
                       _RoleCard(
-                        title: 'Super Admin Login',
-                        subtitle:
-                            'Manage admins, control the platform, and monitor system activity.',
+                       title: l10n.text('super_admin_login'),
+                        subtitle: l10n.text('super_admin_login_subtitle'),
                         icon: Icons.workspace_premium_outlined,
                         accent: const Color(0xFF6A5ACD),
                         onTap: () {
