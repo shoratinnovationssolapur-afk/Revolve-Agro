@@ -39,7 +39,6 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
-                      // Using the new Section Heading widget from the incoming branch
                       AppSectionHeading(
                         title: l10n.text('choose_experience_title'),
                         subtitle: l10n.text('choose_experience_subtitle'),
@@ -83,7 +82,7 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
-                      // Super Admin Card (Integrated with your logic + new UI style)
+                      // Super Admin Card
                       _RoleCard(
                         title: 'Super Admin',
                         subtitle: 'Manage admins, control the platform, and monitor activity.',
@@ -101,36 +100,11 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
-                      // Multilingual Support Info
+                      // Multilingual Support Info (RESOLVED)
                       AppGlassCard(
-<<<<<<< HEAD
-                        child: Row(
-                          children: [
-                            const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                l10n.text('multilingual_support'),
-                                style: const TextStyle(height: 1.45),
-=======
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(Icons.language_rounded,
-                                    color: Color(0xFF2F6A3E)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    l10n.text('multilingual_support'),
-                                    style: const TextStyle(height: 1.45),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
                             Container(
                               padding: const EdgeInsets.all(18),
                               decoration: BoxDecoration(
@@ -148,7 +122,6 @@ class RoleSelectionScreen extends StatelessWidget {
                                     ),
                                   ),
                                 ],
->>>>>>> 80dc2dafb33893ea3bdb23d4f8e6e71a8cb5c668
                               ),
                             ),
                           ],

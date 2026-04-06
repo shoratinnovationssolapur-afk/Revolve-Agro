@@ -207,6 +207,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ],
                           const SizedBox(height: 18),
+// ... existing imports ...
+
+// Replace the Container containing the Workspace Text (around line 145) with this:
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
@@ -214,20 +217,16 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(22),
                             ),
                             child: Text(
-<<<<<<< HEAD
                               isSuperAdmin
                                   ? "Super Admin Workspace"
-                                  : (isAdmin ? l10n.text('admin_workspace') : l10n.text('user_workspace')),
-
-=======
-                              isAdmin ? l10n.text('admin_workspace') : l10n.text('farmer_workspace'),
->>>>>>> 80dc2dafb33893ea3bdb23d4f8e6e71a8cb5c668
+                                  : (isAdmin ? l10n.text('admin_workspace') : l10n.text('farmer_workspace')),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
+// ... rest of the file remains the same ...
                         ],
                       ),
                     ),
