@@ -2,11 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
-import '../widgets/language_selector.dart';
-import 'admin_manage_products_page.dart';
-import 'profile_page.dart';
-import 'welcome_screen.dart';
-import 'admin_gallery_screen.dart'; // ✅ added
+// ✅ added
 
 class AdminOrdersPage extends StatelessWidget {
   const AdminOrdersPage({super.key});

@@ -281,7 +281,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             }
                           }
                         },
-                        activeColor: accent,
+                        activeThumbColor: accent,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -311,7 +311,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             }
                           }
                         },
-                        activeColor: accent,
+                        activeThumbColor: accent,
                       ),
                     ),
                     const SizedBox(height: 12),
