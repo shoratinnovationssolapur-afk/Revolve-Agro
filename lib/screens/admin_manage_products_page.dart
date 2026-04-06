@@ -1,9 +1,7 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import 'cloudinary_service.dart';
 import 'welcome_screen.dart';
 
@@ -11,8 +9,7 @@ class AdminManageProductsPage extends StatefulWidget {
   const AdminManageProductsPage({super.key});
 
   @override
-  State<AdminManageProductsPage> createState() =>
-      _AdminManageProductsPageState();
+  State<AdminManageProductsPage> createState() => _AdminManageProductsPageState();
 }
 
 class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
@@ -20,39 +17,30 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
   final CloudinaryService _cloudinaryService = CloudinaryService();
 
   final TextEditingController _addNameController = TextEditingController();
-  final TextEditingController _addDetailsController = TextEditingController();
-  final TextEditingController _addDescriptionController =
-      TextEditingController();
+  final TextEditingController _addContentController = TextEditingController(); // Maps to "CONTENT" in PDF
+  final TextEditingController _addDescriptionController = TextEditingController();
   final TextEditingController _addPriceController = TextEditingController();
-  final TextEditingController _addInventoryController =
-      TextEditingController();
+  final TextEditingController _addPackingController = TextEditingController(); // New field for PDF "PACKING SIZE"
 
   File? _addImageFile;
-  String? _addImageUrlPreview;
-
   bool _isSavingAdd = false;
   bool _isSavingEdit = false;
 
   @override
   void dispose() {
     _addNameController.dispose();
-    _addDetailsController.dispose();
+    _addContentController.dispose();
     _addDescriptionController.dispose();
     _addPriceController.dispose();
-    _addInventoryController.dispose();
+    _addPackingController.dispose();
     super.dispose();
   }
 
+  // --- Image Picking Logic ---
   Future<void> _pickAddImage() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (image == null) return;
-    setState(() {
-      _addImageFile = File(image.path);
-      _addImageUrlPreview = null;
-    });
+    setState(() => _addImageFile = File(image.path));
   }
 
   Future<String?> _uploadImageIfNeeded(File? file) async {
@@ -60,41 +48,19 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
     return _cloudinaryService.uploadMedia(file, 'image');
   }
 
+  // --- Add Product (PDF Styled) ---
   Future<void> _addProduct() async {
     if (_isSavingAdd) return;
 
     final name = _addNameController.text.trim();
-    final details = _addDetailsController.text.trim();
+    final content = _addContentController.text.trim();
     final description = _addDescriptionController.text.trim();
-
+    final packing = _addPackingController.text.trim();
     final price = int.tryParse(_addPriceController.text.trim());
-    final inventoryQuantity =
-        int.tryParse(_addInventoryController.text.trim());
 
-    if (name.isEmpty || details.isEmpty || description.isEmpty) {
+    if (name.isEmpty || content.isEmpty || _addImageFile == null || price == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill name, details and description.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    if (price == null || price < 0 || inventoryQuantity == null || inventoryQuantity < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter valid price and inventory quantity.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    if (_addImageFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a product image.'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Please fill Name, Content, Price and select an Image.'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -102,615 +68,133 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
     setState(() => _isSavingAdd = true);
     try {
       final imageUrl = await _uploadImageIfNeeded(_addImageFile);
-      if (imageUrl == null) {
-        throw Exception('Image upload failed');
-      }
 
       await FirebaseFirestore.instance.collection('products').add({
         'name': name,
-        'details': details,
+        'details': content, // Storing "Content" from PDF here
         'description': description,
+        'packingSize': packing,
         'imageUrl': imageUrl,
         'price': price,
-        'inventoryQuantity': inventoryQuantity,
-        'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product added successfully.')),
-      );
-
       _addNameController.clear();
-      _addDetailsController.clear();
+      _addContentController.clear();
       _addDescriptionController.clear();
+      _addPackingController.clear();
       _addPriceController.clear();
-      _addInventoryController.clear();
-      setState(() {
-        _addImageFile = null;
-        _addImageUrlPreview = null;
-      });
+      setState(() => _addImageFile = null);
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product added successfully!')));
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add product: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isSavingAdd = false);
     }
   }
 
-  Future<void> _showEditDialog(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) async {
-    if (_isSavingEdit) return;
-
+  // --- Edit Dialog (Fixed Assertion Error) ---
+  Future<void> _showEditDialog(QueryDocumentSnapshot<Map<String, dynamic>> doc) async {
     final data = doc.data();
-    final String originalImageUrl = (data['imageUrl'] ?? '').toString();
 
-    final TextEditingController nameController =
-        TextEditingController(text: (data['name'] ?? '').toString());
-    final TextEditingController detailsController =
-        TextEditingController(text: (data['details'] ?? '').toString());
-    final TextEditingController descriptionController =
-        TextEditingController(text: (data['description'] ?? '').toString());
-
-    final priceRaw = data['price'];
-    final invRaw = data['inventoryQuantity'];
-    final int price = priceRaw is num
-        ? priceRaw.toInt()
-        : int.tryParse((priceRaw ?? 0).toString()) ?? 0;
-    final int inventoryQuantity = invRaw is num
-        ? invRaw.toInt()
-        : int.tryParse((invRaw ?? 0).toString()) ?? 0;
-
-    final TextEditingController priceController = TextEditingController(
-      text: price.toString(),
-    );
-    final TextEditingController inventoryController = TextEditingController(
-      text: inventoryQuantity.toString(),
-    );
+    final nameController = TextEditingController(text: data['name']?.toString());
+    final contentController = TextEditingController(text: data['details']?.toString());
+    final descController = TextEditingController(text: data['description']?.toString());
+    final priceController = TextEditingController(text: data['price']?.toString());
+    final packingController = TextEditingController(text: data['packingSize']?.toString());
 
     File? editImageFile;
-    String? editImagePreviewUrl;
 
-    await showDialog<void>(
+    await showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> pickEditImage() async {
-              final XFile? image = await _picker.pickImage(
-                source: ImageSource.gallery,
-                imageQuality: 85,
-              );
-              if (image == null) return;
-              setDialogState(() {
-                editImageFile = File(image.path);
-                editImagePreviewUrl = null;
-              });
-            }
-
-            Future<void> saveEdit() async {
-              if (_isSavingEdit) return;
-
-              final name = nameController.text.trim();
-              final details = detailsController.text.trim();
-              final description = descriptionController.text.trim();
-              final price = int.tryParse(priceController.text.trim());
-              final inventoryQuantity =
-                  int.tryParse(inventoryController.text.trim());
-
-              if (name.isEmpty || details.isEmpty || description.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Please fill name, details and description.',
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Edit Product Details'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      final XFile? img = await _picker.pickImage(source: ImageSource.gallery);
+                      if (img != null) setDialogState(() => editImageFile = File(img.path));
+                    },
+                    child: Container(
+                      height: 100, width: 100,
+                      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10)),
+                      child: editImageFile != null
+                          ? Image.file(editImageFile!, fit: BoxFit.cover)
+                          : (data['imageUrl'] != null ? Image.network(data['imageUrl'], fit: BoxFit.cover) : const Icon(Icons.add_a_photo)),
                     ),
-                    backgroundColor: Colors.red,
                   ),
-                );
-                return;
-              }
-              if (price == null ||
-                  price < 0 ||
-                  inventoryQuantity == null ||
-                  inventoryQuantity < 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Please enter valid price and inventory quantity.',
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              setState(() => _isSavingEdit = true);
-              try {
-                String? imageUrlToSave;
-                if (editImageFile != null) {
-                  imageUrlToSave =
-                      await _uploadImageIfNeeded(editImageFile);
-                  if (imageUrlToSave == null) {
-                    throw Exception('Image upload failed');
-                  }
-                }
-
-                final updateData = <String, dynamic>{
-                  'name': name,
-                  'details': details,
-                  'description': description,
-                  'price': price,
-                  'inventoryQuantity': inventoryQuantity,
-                  'updatedAt': FieldValue.serverTimestamp(),
-                };
-                if (imageUrlToSave != null) {
-                  updateData['imageUrl'] = imageUrlToSave;
-                }
-
-                await FirebaseFirestore.instance
-                    .collection('products')
-                    .doc(doc.id)
-                    .update(updateData);
-
-                if (!mounted) return;
-                Navigator.pop(context);
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to update product: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              } finally {
-                if (mounted) setState(() => _isSavingEdit = false);
-              }
-            }
-
-            return AlertDialog(
-              title: const Text('Edit Product'),
-              content: SizedBox(
-                width: 420,
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              width: 86,
-                              height: 86,
-                              color: Colors.grey[200],
-                              child: editImageFile != null
-                                  ? Image.file(
-                                      editImageFile!,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : (editImagePreviewUrl != null
-                                      ? Image.network(
-                                          editImagePreviewUrl!,
-                                          fit: BoxFit.cover,
-                                        )
-                                      : (originalImageUrl.isNotEmpty
-                                          ? Image.network(
-                                              originalImageUrl,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : const Icon(Icons.image_not_supported))),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                ElevatedButton.icon(
-                                  onPressed: pickEditImage,
-                                  icon: const Icon(Icons.image_search_rounded),
-                                  label: const Text('Change Image'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: nameController,
-                        decoration:
-                            const InputDecoration(labelText: 'Product Name'),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: detailsController,
-                        decoration: const InputDecoration(
-                          labelText: 'Details',
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: descriptionController,
-                        minLines: 2,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: priceController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Price',
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: inventoryController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Inventory Quantity',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isSavingEdit ? null : saveEdit,
-                          child: _isSavingEdit
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Text('Save'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                  TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Product Name (e.g. HUSTLER ZINC)')),
+                  TextField(controller: contentController, decoration: const InputDecoration(labelText: 'Content (e.g. Zinc Chelated 12%)')),
+                  TextField(controller: packingController, decoration: const InputDecoration(labelText: 'Packing Size (e.g. 500gm)')),
+                  TextField(controller: priceController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price (DRP)')),
+                  TextField(controller: descController, maxLines: 2, decoration: const InputDecoration(labelText: 'Description')),
+                ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: _isSavingEdit ? null : () async {
+                  setDialogState(() => _isSavingEdit = true);
+                  try {
+                    String? newUrl;
+                    if (editImageFile != null) newUrl = await _uploadImageIfNeeded(editImageFile);
+
+                    await FirebaseFirestore.instance.collection('products').doc(doc.id).update({
+                      'name': nameController.text.trim(),
+                      'details': contentController.text.trim(),
+                      'description': descController.text.trim(),
+                      'packingSize': packingController.text.trim(),
+                      'price': int.tryParse(priceController.text.trim()) ?? 0,
+                      if (newUrl != null) 'imageUrl': newUrl,
+                      'updatedAt': FieldValue.serverTimestamp(),
+                    });
+                    if (context.mounted) Navigator.pop(context);
+                  } finally {
+                    setDialogState(() => _isSavingEdit = false);
+                  }
+                },
+                child: _isSavingEdit ? const CircularProgressIndicator(strokeWidth: 2) : const Text('Update'),
+              ),
+            ],
+          );
+        },
+      ),
     );
 
+    // Dispose controllers ONLY after the dialog is completely finished
     nameController.dispose();
-    detailsController.dispose();
-    descriptionController.dispose();
+    contentController.dispose();
+    descController.dispose();
     priceController.dispose();
-    inventoryController.dispose();
+    packingController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFEAF3DE),
-              Color(0xFFF7F3E8),
-            ],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFEAF3DE), Color(0xFFF7F3E8)], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-                child: Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF183020), Color(0xFF30523B)],
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton.filledTonal(
-                        onPressed: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const WelcomeScreen(preferredRole: 'Admin'),
-                            ),
-                            (route) => false,
-                          );
-                        },
-                        icon: const Icon(Icons.arrow_back_rounded),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Manage Products',
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildHeader(),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Add New Product',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      width: 86,
-                                      height: 86,
-                                      color: Colors.grey[200],
-                                      child: _addImageFile != null
-                                          ? Image.file(
-                                              _addImageFile!,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : (_addImageUrlPreview != null
-                                              ? Image.network(
-                                                  _addImageUrlPreview!,
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : const Icon(Icons.image_not_supported)),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      onPressed:
-                                          _isSavingAdd ? null : _pickAddImage,
-                                      icon: const Icon(Icons.add_photo_alternate_rounded),
-                                      label: const Text('Select Image'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF2F6A3E),
-                                        foregroundColor: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              TextField(
-                                controller: _addNameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Product Name',
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _addDetailsController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Details',
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _addDescriptionController,
-                                minLines: 2,
-                                maxLines: 3,
-                                decoration: const InputDecoration(
-                                  labelText: 'Description',
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _addPriceController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: 'Price (Rs.)',
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _addInventoryController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: 'Inventory Quantity',
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _isSavingAdd ? null : _addProduct,
-                                  child: _isSavingAdd
-                                      ? const SizedBox(
-                                          height: 18,
-                                          width: 18,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        )
-                                      : const Text('Add Product'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      const Text(
-                        'Existing Products',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                        stream: FirebaseFirestore.instance
-                            .collection('products')
-                            .orderBy('updatedAt', descending: true)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 30),
-                              child: Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                          }
-                          final docs = snapshot.data?.docs ?? [];
-                          if (docs.isEmpty) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
-                              child: Center(
-                                child: Text(
-                                  'No products found. Add your first product above.',
-                                ),
-                              ),
-                            );
-                          }
-
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: docs.length,
-                            itemBuilder: (context, index) {
-                              final doc = docs[index];
-                              final data = doc.data();
-                              final name = (data['name'] ?? '').toString();
-                              final imageUrl = (data['imageUrl'] ?? '').toString();
-                              final priceRaw = data['price'];
-                              final invRaw = data['inventoryQuantity'];
-                              final int price = priceRaw is num
-                                  ? priceRaw.toInt()
-                                  : int.tryParse(priceRaw?.toString() ?? '0') ?? 0;
-                              final int inventoryQuantity = invRaw is num
-                                  ? invRaw.toInt()
-                                  : int.tryParse(invRaw?.toString() ?? '0') ?? 0;
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(18),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: Container(
-                                        width: 84,
-                                        height: 84,
-                                        color: Colors.grey[200],
-                                        child: imageUrl.isNotEmpty
-                                            ? Image.network(
-                                                imageUrl,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (_, _, _) =>
-                                                    const Icon(Icons.broken_image_outlined),
-                                              )
-                                            : const Icon(Icons.image_not_supported_outlined),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            name.isNotEmpty ? name : 'Unnamed Product',
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            'Rs.$price/=',
-                                            style: const TextStyle(
-                                              color: Color(0xFF2F6A3E),
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            'Stock: $inventoryQuantity',
-                                            style: TextStyle(
-                                              color: inventoryQuantity <= 0
-                                                  ? Colors.red
-                                                  : Colors.green.shade700,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: OutlinedButton.icon(
-                                              onPressed: _isSavingEdit
-                                                  ? null
-                                                  : () => _showEditDialog(
-                                                        doc,
-                                                      ),
-                                              icon: const Icon(
-                                                Icons.edit_outlined,
-                                              ),
-                                              label: const Text('Edit'),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 30),
+                      _buildAddCard(),
+                      const SizedBox(height: 20),
+                      _buildProductList(),
                     ],
                   ),
                 ),
@@ -721,5 +205,77 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
       ),
     );
   }
-}
 
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(18),
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF183020), Color(0xFF30523B)]), borderRadius: BorderRadius.circular(30)),
+        child: Row(
+          children: [
+            IconButton.filledTonal(onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const WelcomeScreen(preferredRole: 'Admin'))), icon: const Icon(Icons.arrow_back_rounded)),
+            const SizedBox(width: 10),
+            const Text('Product Management', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddCard() {
+    return Card(
+      elevation: 4, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Text('Add New Product (from Price List)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            GestureDetector(
+              onTap: _pickAddImage,
+              child: Container(
+                height: 120, width: 120,
+                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey[300]!)),
+                child: _addImageFile != null ? Image.file(_addImageFile!, fit: BoxFit.cover) : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo, size: 40), Text('Select Image')]),
+              ),
+            ),
+            TextField(controller: _addNameController, decoration: const InputDecoration(labelText: 'Product Name (e.g. HUSTLER COMBI)')),
+            TextField(controller: _addContentController, decoration: const InputDecoration(labelText: 'Content/HSN (e.g. Mix Micronutrient)')),
+            TextField(controller: _addPackingController, decoration: const InputDecoration(labelText: 'Packing Size (e.g. 250gm / 500ml)')),
+            TextField(controller: _addPriceController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'DRP Price (Rs.)')),
+            TextField(controller: _addDescriptionController, maxLines: 2, decoration: const InputDecoration(labelText: 'Short Description')),
+            const SizedBox(height: 15),
+            ElevatedButton(onPressed: _isSavingAdd ? null : _addProduct, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2F6A3E), foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50)), child: _isSavingAdd ? const CircularProgressIndicator(color: Colors.white) : const Text('Add to Inventory')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductList() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('products').orderBy('updatedAt', descending: true).snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const CircularProgressIndicator();
+        final docs = snapshot.data!.docs;
+        return ListView.builder(
+          shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final data = docs[index].data();
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: Image.network(data['imageUrl'] ?? '', width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.image)),
+                title: Text(data['name'] ?? ''),
+                subtitle: Text('DRP: Rs.${data['price']} | ${data['packingSize'] ?? ''}'),
+                trailing: IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _showEditDialog(docs[index])),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
