@@ -27,6 +27,12 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         child: SafeArea(
           child: Column(
             children: [
+<<<<<<< HEAD
+
+              // HEADER
+// Replace the current Header Padding block with this simplified version:
+=======
+>>>>>>> 4de844c681abb2fbeb86804d77c2f9ebf4a02000
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                 child: AppPageHeader(
@@ -105,6 +111,35 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
+<<<<<<< HEAD
+                      Row(
+                        children: [
+                          IconButton.filledTonal(
+                            onPressed: () => Navigator.pop(context), // Simple back to Dashboard
+                            icon: const Icon(Icons.arrow_back_rounded),
+                          ),
+                          const SizedBox(width: 15),
+                          Text(
+                            l10n.text('incoming_orders'), // Or "Orders"
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          l10n.text('incoming_orders_subtitle'),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.82),
+                            height: 1.45,
+                          ),
+                        ),
+=======
                       _StatusFilterButton(
                         label: 'Pending',
                         status: 'pending',
@@ -142,6 +177,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                           });
                         },
                         color: Colors.red,
+>>>>>>> 4de844c681abb2fbeb86804d77c2f9ebf4a02000
                       ),
                     ],
                   ),
