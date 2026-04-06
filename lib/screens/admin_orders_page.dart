@@ -32,10 +32,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         child: SafeArea(
           child: Column(
             children: [
-<<<<<<< HEAD
-              // 🔥 CLEANED HEADER SECTION
-=======
->>>>>>> 80dc2dafb33893ea3bdb23d4f8e6e71a8cb5c668
+              // 🔥 INTEGRATED HEADER SECTION
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                 child: Container(
@@ -48,7 +45,6 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                   ),
                   child: Column(
                     children: [
-<<<<<<< HEAD
                       Row(
                         children: [
                           IconButton.filledTonal(
@@ -93,15 +89,13 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                 ),
               ),
 
-              // 🔥 STATUS FILTER TABS (RESOLVED)
+              // 🔥 STATUS FILTER TABS
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-=======
->>>>>>> 80dc2dafb33893ea3bdb23d4f8e6e71a8cb5c668
                       _StatusFilterButton(
                         label: 'Pending',
                         isSelected: _selectedStatus == 'pending',
