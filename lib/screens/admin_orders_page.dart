@@ -117,4 +117,38 @@ class AdminOrdersPage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _OrderCard({
+    required String userName,
+    required List<dynamic> products,
+    required String totalAmount,
+    required Map<String, dynamic>? deliveryAddress,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              userName,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('Total: \$$totalAmount'),
+            if (deliveryAddress != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                deliveryAddress['street'] ?? 'No address',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
