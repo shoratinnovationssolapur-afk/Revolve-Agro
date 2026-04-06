@@ -214,13 +214,10 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(22),
                             ),
                             child: Text(
-<<<<<<< HEAD
                               isSuperAdmin
                                   ? "Super Admin Workspace"
                                   : (isAdmin ? l10n.text('admin_workspace') : l10n.text('user_workspace')),
-=======
-                              isAdmin ? l10n.text('admin_workspace') : l10n.text('farmer_workspace'),
->>>>>>> 4de844c681abb2fbeb86804d77c2f9ebf4a02000
+
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -285,7 +282,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             }
                           }
                         },
-                        activeColor: accent,
+                        activeThumbColor: accent,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -315,7 +312,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             }
                           }
                         },
-                        activeColor: accent,
+                        activeThumbColor: accent,
                       ),
                     ),
                     const SizedBox(height: 12),
