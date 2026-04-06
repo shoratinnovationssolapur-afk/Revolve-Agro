@@ -19,6 +19,7 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
+    // 🔥 UPDATED to the newer version (8.11.1) from the incoming branch
     id("com.android.application") version "8.11.1" apply false
     // START: FlutterFire Configuration
     id("com.google.gms.google-services") version "4.3.15" apply false

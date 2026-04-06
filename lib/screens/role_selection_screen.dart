@@ -39,14 +39,14 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
-                      const AppSectionHeading(
-                        title: 'Welcome to Revolve Agro',
-                        subtitle:
-                            'Choose the workspace that matches how you use the app, then continue with the right login flow.',
+                      AppSectionHeading(
+                        title: l10n.text('choose_experience_title'),
+                        subtitle: l10n.text('choose_experience_subtitle'),
                       ),
 
                       const SizedBox(height: 26),
 
+                      // User Card
                       _RoleCard(
                         title: l10n.text('user_login'),
                         subtitle: l10n.text('user_login_subtitle'),
@@ -56,8 +56,7 @@ class RoleSelectionScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const AuthScreen(role: "User"),
+                              builder: (context) => const AuthScreen(role: "User"),
                             ),
                           );
                         },
@@ -65,7 +64,7 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
-                      /// 🛠 ADMIN
+                      // Admin Card
                       _RoleCard(
                         title: l10n.text('admin_login'),
                         subtitle: l10n.text('admin_login_subtitle'),
@@ -75,8 +74,7 @@ class RoleSelectionScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const AuthScreen(role: "Admin"),
+                              builder: (context) => const AuthScreen(role: "Admin"),
                             ),
                           );
                         },
@@ -84,18 +82,17 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
+                      // Super Admin Card
                       _RoleCard(
-                        title: 'Super Admin Login',
-                        subtitle:
-                            'Manage admins, control the platform, and monitor system activity.',
-                        icon: Icons.workspace_premium_outlined,
-                        accent: const Color(0xFF6A5ACD),
+                        title: 'Super Admin',
+                        subtitle: 'Manage admins, control the platform, and monitor activity.',
+                        icon: Icons.security_rounded,
+                        accent: const Color(0xFF4B2A63),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const AuthScreen(role: "SuperAdmin"),
+                              builder: (context) => const AuthScreen(role: "SuperAdmin"),
                             ),
                           );
                         },
@@ -103,25 +100,11 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 18),
 
+                      // Multilingual Support Info (RESOLVED)
                       AppGlassCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(Icons.language_rounded,
-                                    color: Color(0xFF2F6A3E)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    l10n.text('multilingual_support'),
-                                    style: const TextStyle(height: 1.45),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
                             Container(
                               padding: const EdgeInsets.all(18),
                               decoration: BoxDecoration(
@@ -173,12 +156,13 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(30),
-        child: Ink(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(30),
           child: AppGlassCard(
             padding: const EdgeInsets.all(22),
             child: Row(
@@ -217,8 +201,7 @@ class _RoleCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.arrow_forward_rounded,
-                    color: Color(0xFF183020)),
+                const Icon(Icons.arrow_forward_rounded, color: Color(0xFF183020)),
               ],
             ),
           ),
