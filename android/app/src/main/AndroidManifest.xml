@@ -12,7 +12,11 @@
     <application
         android:label="revolveagro"
         android:name="${applicationName}"
+<<<<<<< HEAD
+        android:icon="@mipmap/launcher_icon">
+=======
         android:icon="@mipmap/ic_launcher">
+>>>>>>> a097ec79059626f4258e97ebf8a5f1160a58e203
         <activity
             android:name=".MainActivity"
             android:exported="true"

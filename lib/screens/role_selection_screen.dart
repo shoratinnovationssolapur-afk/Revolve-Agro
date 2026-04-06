@@ -103,6 +103,7 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       // Multilingual Support Info
                       AppGlassCard(
+<<<<<<< HEAD
                         child: Row(
                           children: [
                             const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
@@ -111,6 +112,43 @@ class RoleSelectionScreen extends StatelessWidget {
                               child: Text(
                                 l10n.text('multilingual_support'),
                                 style: const TextStyle(height: 1.45),
+=======
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.language_rounded,
+                                    color: Color(0xFF2F6A3E)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    l10n.text('multilingual_support'),
+                                    style: const TextStyle(height: 1.45),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.88),
+                                borderRadius: BorderRadius.circular(26),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      l10n.text('multilingual_support'),
+                                      style: const TextStyle(height: 1.45),
+                                    ),
+                                  ),
+                                ],
+>>>>>>> 80dc2dafb33893ea3bdb23d4f8e6e71a8cb5c668
                               ),
                             ),
                           ],

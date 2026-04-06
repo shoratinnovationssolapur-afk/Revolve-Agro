@@ -214,10 +214,14 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(22),
                             ),
                             child: Text(
+<<<<<<< HEAD
                               isSuperAdmin
                                   ? "Super Admin Workspace"
                                   : (isAdmin ? l10n.text('admin_workspace') : l10n.text('user_workspace')),
 
+=======
+                              isAdmin ? l10n.text('admin_workspace') : l10n.text('farmer_workspace'),
+>>>>>>> 80dc2dafb33893ea3bdb23d4f8e6e71a8cb5c668
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
