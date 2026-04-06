@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
 import 'full_screen_viewer.dart';
+import 'order_history_page.dart';
 import 'product_list.dart';
 import 'profile_page.dart';
 import 'user_gallery_screen.dart';
@@ -33,18 +36,18 @@ class _UserDashboardState extends State<UserDashboard> {
       destinationIndex: 2,
     ),
     _QuickModule(
+      title: 'Order History',
+      subtitle: 'Track your order status',
+      icon: Icons.history_outlined,
+      color: Color(0xFF8B5CF6),
+      destinationIndex: 4,
+    ),
+    _QuickModule(
       title: 'Profile',
       subtitle: 'Language and account settings',
       icon: Icons.person_outline_rounded,
       color: Color(0xFF305C89),
       destinationIndex: 3,
-    ),
-    _QuickModule(
-      title: 'Crop Feed',
-      subtitle: 'Fresh product stories and updates',
-      icon: Icons.campaign_outlined,
-      color: Color(0xFF8C5B1C),
-      destinationIndex: 0,
     ),
   ];
 
@@ -77,6 +80,74 @@ class _UserDashboardState extends State<UserDashboard> {
   void initState() {
     super.initState();
     _loadUserData();
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      // Check if location permission is enabled
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          // Permissions are denied - set fallback location
+          _setFallbackLocation();
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        // Permissions are denied forever - set fallback location
+        _setFallbackLocation();
+        return;
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Get city name from coordinates using reverse geocoding
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final placemark = placemarks.first;
+        final newLocation = placemark.locality ??
+                            placemark.administrativeArea ??
+                            'Current Location';
+
+        if (mounted) {
+          setState(() {
+            location = newLocation;
+          });
+        }
+      } else {
+        _setFallbackLocation();
+      }
+    } catch (e) {
+      debugPrint('Error getting current location: $e');
+      _setFallbackLocation();
+    }
+  }
+
+  void _setFallbackLocation() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance.collection('users').doc(user.uid).get().then((doc) {
+        if (mounted && location.isEmpty) {
+          setState(() {
+            location = _resolveLocationLabel(doc.data());
+          });
+        }
+      });
+    } else if (mounted && location.isEmpty) {
+      setState(() {
+        location = context.l10n.text('current_location_fallback');
+      });
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -92,7 +163,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
     setState(() {
       userName = doc.data()?['name']?.toString() ?? context.l10n.text('farmer');
-      location = _resolveLocationLabel(doc.data());
+      // Don't set location here - let GPS override it
     });
   }
 
@@ -120,17 +191,28 @@ class _UserDashboardState extends State<UserDashboard> {
     return context.l10n.text('current_location_fallback');
   }
 
-  void _goToTab(int index) {
+  void goToTab(int index) {
     setState(() => _currentIndex = index);
   }
 
-  void _openCartOrShowMessage() {
+  void openCartOrShowMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.text('no_items_added_cart'))),
     );
   }
 
-  Widget _buildHome() {
+  String _thumbnailFor(String url, String type) {
+    if (type == 'video') {
+      return url.replaceAll('.mp4', '.jpg').replaceAll('.mov', '.jpg').replaceAll('.mkv', '.jpg');
+    }
+    return url;
+  }
+
+  void _goToTab(int index) {
+    setState(() => _currentIndex = index);
+  }
+
+  Widget buildHome() {
     final l10n = context.l10n;
     return AppShell(
       child: SafeArea(
@@ -168,12 +250,31 @@ class _UserDashboardState extends State<UserDashboard> {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () async {
+                                await _getCurrentLocation();
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(l10n.text('current_location_fetched')),
+                                      duration: const Duration(seconds: 1),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.all(4.0),
+                                child: Icon(Icons.refresh, color: Colors.white, size: 16),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                       actions: [
                         IconButton.filledTonal(
-                          onPressed: () => _goToTab(3),
+                          onPressed: () => goToTab(3),
                           icon: const Icon(Icons.person_outline_rounded),
                         ),
                       ],
@@ -209,7 +310,19 @@ class _UserDashboardState extends State<UserDashboard> {
                                   final module = _quickModules[index];
                                   return _DashboardModuleCard(
                                     module: module,
-                                    onTap: () => _goToTab(module.destinationIndex),
+                                    onTap: () {
+                                      // Special handling for Order History
+                                      if (module.destinationIndex == 4) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const OrderHistoryPage(),
+                                          ),
+                                        );
+                                      } else {
+                                        goToTab(module.destinationIndex);
+                                      }
+                                    },
                                   );
                                 },
                               ),
@@ -428,13 +541,6 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  String _thumbnailFor(String url, String type) {
-    if (type == 'video') {
-      return url.replaceAll('.mp4', '.jpg').replaceAll('.mov', '.jpg').replaceAll('.mkv', '.jpg');
-    }
-    return url;
-  }
-
   Widget _buildCart() {
     final l10n = context.l10n;
     return AppShell(
@@ -457,7 +563,7 @@ class _UserDashboardState extends State<UserDashboard> {
               const SizedBox(height: 18),
               ElevatedButton.icon(
                 onPressed: () {
-                  _openCartOrShowMessage();
+                  openCartOrShowMessage();
                 },
                 icon: const Icon(Icons.shopping_bag_outlined),
                 label: Text(l10n.text('go_to_cart')),
@@ -473,7 +579,7 @@ class _UserDashboardState extends State<UserDashboard> {
     return const RevolveAgroProducts();
   }
 
-  Widget _buildProfile() {
+  Widget buildProfile() {
     return const ProfilePage(role: 'User');
   }
 
@@ -481,10 +587,10 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final pages = [
-      _buildHome(),
+      buildHome(),
       _buildProducts(),
       _buildCart(),
-      _buildProfile(),
+      buildProfile(),
     ];
 
     return Scaffold(
@@ -534,8 +640,8 @@ class _DashboardModuleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final titleKey = _titleKeyForDestination(module.destinationIndex);
-    final subtitleKey = _subtitleKeyForDestination(module.destinationIndex);
+    final titleKey = titleKeyForDestination(module.destinationIndex);
+    final subtitleKey = subtitleKeyForDestination(module.destinationIndex);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -587,7 +693,7 @@ class _DashboardModuleCard extends StatelessWidget {
     );
   }
 
-  String _titleKeyForDestination(int destinationIndex) {
+  String titleKeyForDestination(int destinationIndex) {
     if (destinationIndex == 1) {
       return 'shop_inputs';
     }
@@ -597,10 +703,13 @@ class _DashboardModuleCard extends StatelessWidget {
     if (destinationIndex == 3) {
       return 'profile_short';
     }
+    if (destinationIndex == 4) {
+      return 'order_history';
+    }
     return 'crop_feed';
   }
 
-  String _subtitleKeyForDestination(int destinationIndex) {
+  String subtitleKeyForDestination(int destinationIndex) {
     if (destinationIndex == 1) {
       return 'shop_inputs_subtitle';
     }
@@ -609,6 +718,9 @@ class _DashboardModuleCard extends StatelessWidget {
     }
     if (destinationIndex == 3) {
       return 'profile_short_subtitle';
+    }
+    if (destinationIndex == 4) {
+      return 'order_history_subtitle';
     }
     return 'crop_feed_subtitle';
   }
@@ -622,8 +734,8 @@ class _InsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final titleKey = _titleKeyForInsight(insight.icon);
-    final subtitleKey = _subtitleKeyForInsight(insight.icon);
+    final titleKey = titleKeyForInsight(insight.icon);
+    final subtitleKey = subtitleKeyForInsight(insight.icon);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -670,7 +782,7 @@ class _InsightCard extends StatelessWidget {
     );
   }
 
-  String _titleKeyForInsight(IconData icon) {
+  String titleKeyForInsight(IconData icon) {
     if (icon == Icons.eco_outlined) {
       return 'field_ready_guidance';
     }
@@ -680,7 +792,7 @@ class _InsightCard extends StatelessWidget {
     return 'farmer_first_experience';
   }
 
-  String _subtitleKeyForInsight(IconData icon) {
+  String subtitleKeyForInsight(IconData icon) {
     if (icon == Icons.eco_outlined) {
       return 'field_ready_guidance_subtitle';
     }

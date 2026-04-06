@@ -21,7 +21,8 @@ class RoleSelectionScreen extends StatelessWidget {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 38),
+                  constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - 38),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -34,12 +35,17 @@ class RoleSelectionScreen extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: LanguageSelector(),
                       ),
+
                       const SizedBox(height: 18),
+
                       const AppSectionHeading(
                         title: 'Welcome to Revolve Agro',
-                        subtitle: 'Choose the workspace that matches how you use the app, then continue with the right login flow.',
+                        subtitle:
+                            'Choose the workspace that matches how you use the app, then continue with the right login flow.',
                       ),
+
                       const SizedBox(height: 26),
+
                       _RoleCard(
                         title: l10n.text('user_login'),
                         subtitle: l10n.text('user_login_subtitle'),
@@ -49,7 +55,8 @@ class RoleSelectionScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "User"),
+                              builder: (context) =>
+                                  const AuthScreen(role: "User"),
                             ),
                           );
                         },
@@ -64,37 +71,69 @@ class RoleSelectionScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "Admin"),
+                              builder: (context) =>
+                                  const AuthScreen(role: "Admin"),
                             ),
                           );
                         },
                       ),
                       const SizedBox(height: 18),
+
                       _RoleCard(
                         title: 'Super Admin Login',
-                        subtitle: 'Manage admins, control the platform, and monitor system activity.',
+                        subtitle:
+                            'Manage admins, control the platform, and monitor system activity.',
                         icon: Icons.workspace_premium_outlined,
                         accent: const Color(0xFF6A5ACD),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "SuperAdmin"),
+                              builder: (context) =>
+                                  const AuthScreen(role: "SuperAdmin"),
                             ),
                           );
                         },
                       ),
+
                       const SizedBox(height: 18),
+
                       AppGlassCard(
-                        child: Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                l10n.text('multilingual_support'),
-                                style: const TextStyle(height: 1.45),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.language_rounded,
+                                    color: Color(0xFF2F6A3E)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    l10n.text('multilingual_support'),
+                                    style: const TextStyle(height: 1.45),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.88),
+                                borderRadius: BorderRadius.circular(26),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      l10n.text('multilingual_support'),
+                                      style: const TextStyle(height: 1.45),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -173,7 +212,8 @@ class _RoleCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.arrow_forward_rounded, color: Color(0xFF183020)),
+                const Icon(Icons.arrow_forward_rounded,
+                    color: Color(0xFF183020)),
               ],
             ),
           ),

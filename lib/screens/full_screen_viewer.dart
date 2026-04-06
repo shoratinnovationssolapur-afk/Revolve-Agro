@@ -6,7 +6,7 @@ class FullScreenViewer extends StatefulWidget {
   final String url;
   final String type;
 
-  const FullScreenViewer({required this.url, required this.type});
+  const FullScreenViewer({super.key, required this.url, required this.type});
 
   @override
   _FullScreenViewerState createState() => _FullScreenViewerState();

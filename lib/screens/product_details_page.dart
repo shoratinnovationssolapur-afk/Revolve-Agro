@@ -17,7 +17,9 @@ class ProductDetailsPage extends StatefulWidget {
 
 class _ProductDetailsPageState extends State<ProductDetailsPage> {
   int quantity = 1;
-  final int unitPrice = 1500;
+
+  int get _unitPrice => widget.product.price;
+  int get _maxQty => widget.product.inventoryQuantity;
 
   Future<void> _showPopup({
     required String title,
@@ -48,7 +50,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       return;
     }
 
-    final totalAmount = unitPrice * quantity;
+    if (_maxQty <= 0) {
+      await _showPopup(
+        title: 'Out of Stock',
+        message: 'This product is currently unavailable.',
+      );
+      return;
+    }
+
+    final safeQty = quantity.clamp(1, _maxQty);
+    final totalAmount = _unitPrice * safeQty;
     if (!mounted) return;
 
     Navigator.push(
@@ -59,6 +70,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             {
               'productName': widget.product.name,
               'quantity': quantity,
+              'productId': widget.product.id,
+              'unitPrice': _unitPrice,
+              'totalPrice': totalAmount,
+              'imageUrl': widget.product.imageUrl,
             }
           ],
           totalAmount: totalAmount,
@@ -78,13 +93,24 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       return;
     }
 
+    if (_maxQty <= 0) {
+      await _showPopup(
+        title: 'Out of Stock',
+        message: 'This product is currently unavailable.',
+      );
+      return;
+    }
+
+    final safeQty = quantity.clamp(1, _maxQty);
+
     try {
       await FirebaseFirestore.instance.collection('cart').add({
         'userId': user.uid,
+        'productId': widget.product.id,
         'productName': widget.product.name,
-        'quantity': quantity,
-        'unitPrice': unitPrice,
-        'totalPrice': unitPrice * quantity,
+        'quantity': safeQty,
+        'unitPrice': _unitPrice,
+        'totalPrice': _unitPrice * safeQty,
         'imageUrl': widget.product.imageUrl,
         'addedAt': FieldValue.serverTimestamp(),
         'status': 'in_cart',
@@ -188,7 +214,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final totalAmount = unitPrice * quantity;
+    final totalAmount = _unitPrice * quantity;
 
     return Scaffold(
       body: Container(

@@ -7,7 +7,11 @@ plugins {
 
 android {
     namespace = "com.example.revolveagro"
+<<<<<<< HEAD
     compileSdk = 36
+=======
+    compileSdk = flutter.compileSdkVersion
+>>>>>>> a097ec79059626f4258e97ebf8a5f1160a58e203
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -25,7 +29,11 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
+<<<<<<< HEAD
         targetSdk = 36
+=======
+        targetSdk = flutter.targetSdkVersion
+>>>>>>> a097ec79059626f4258e97ebf8a5f1160a58e203
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -41,14 +49,4 @@ android {
 
 flutter {
     source = "../.."
-}
-// Add this at the very bottom of the file
-subprojects {
-    project.configurations.all {
-        resolutionStrategy {
-            force("androidx.browser:browser:1.8.0")
-            force("androidx.core:core:1.13.1")
-            force("androidx.core:core-ktx:1.13.1")
-        }
-    }
 }

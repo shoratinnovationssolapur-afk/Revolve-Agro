@@ -15,18 +15,22 @@ import 'welcome_screen.dart';
 import 'user_gallery_screen.dart';
 
 class Product {
+  final String? id;
   final String name;
   final String details;
   final String description;
   final String imageUrl;
-  final String price;
+  final int price;
+  final int inventoryQuantity;
 
   Product({
+    this.id,
     required this.name,
     required this.details,
     required this.description,
     required this.imageUrl,
-    this.price = "request_quote",
+    this.price = 0,
+    this.inventoryQuantity = 999999,
   });
 }
 
@@ -69,21 +73,24 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
       details: 'revo_rhizal_details',
       description: 'revo_rhizal_description',
       imageUrl: 'https://via.placeholder.com/800x500?text=REVO+RHIZAL',
-      price: 'Rs.2400/=',
+      price: 2400,
+      inventoryQuantity: 999999,
     ),
     Product(
       name: 'revo_micro_mix_name',
       details: 'revo_micro_mix_details',
       description: 'revo_micro_mix_description',
       imageUrl: 'https://via.placeholder.com/800x500?text=REVO+MICRO+MIX',
-      price: 'Rs.1500/=',
+      price: 1500,
+      inventoryQuantity: 999999,
     ),
     Product(
       name: 'revo_potash_name',
       details: 'revo_potash_details',
       description: 'revo_potash_description',
       imageUrl: 'https://via.placeholder.com/800x500?text=REVO+POTASH',
-      price: 'Rs.800/=',
+      price: 800,
+      inventoryQuantity: 999999,
     ),
   ];
 
@@ -103,12 +110,47 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
   }
 
   Future<List<Product>> fetchProducts() async {
-    const url = 'https://revolveagro.com';
+    try {
+      final productsSnapshot = await FirebaseFirestore.instance
+          .collection('products')
+          .orderBy('updatedAt', descending: true)
+          .get();
+
+      if (productsSnapshot.docs.isNotEmpty) {
+        return productsSnapshot.docs.map((doc) {
+          final data = doc.data();
+
+          final priceRaw = data['price'];
+          final invRaw = data['inventoryQuantity'];
+
+          final price = priceRaw is num
+              ? priceRaw.toInt()
+              : int.tryParse((priceRaw ?? 1500).toString()) ?? 1500;
+
+          final inventoryQuantity = invRaw is num
+              ? invRaw.toInt()
+              : int.tryParse((invRaw ?? 999999).toString()) ?? 999999;
+
+          return Product(
+            id: doc.id,
+            name: (data['name'] ?? '').toString(),
+            details: (data['details'] ?? '').toString(),
+            description: (data['description'] ?? '').toString(),
+            imageUrl: (data['imageUrl'] ?? '').toString(),
+            price: price,
+            inventoryQuantity: inventoryQuantity,
+          );
+        }).toList();
+      }
+    } catch (_) {
+      // If Firestore isn't available for some reason, fall back to scrape.
+    }
 
     if (kIsWeb) {
       return _fallbackProducts;
     }
 
+    const url = 'https://revolveagro.com';
     try {
       final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
 
@@ -122,10 +164,17 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
 
         return productElements.map((element) {
           return Product(
-            name: element.querySelector('h3')?.text.trim() ?? 'Unknown Product',
-            details: element.querySelector('.product-details')?.text.trim() ?? '',
-            description: element.querySelector('.product-description')?.text.trim() ?? '',
-            imageUrl: '$url/${element.querySelector('img')?.attributes['src'] ?? ''}',
+            name: element.querySelector('h3')?.text.trim() ??
+                'Unknown Product',
+            details: element.querySelector('.product-details')?.text.trim() ??
+                '',
+            description:
+                element.querySelector('.product-description')?.text.trim() ?? '',
+            imageUrl:
+                '$url/${element.querySelector('img')?.attributes['src'] ?? ''}',
+            // Scraped data doesn't include price/inventory; provide safe defaults.
+            price: 1500,
+            inventoryQuantity: 999999,
           );
         }).toList();
       }
@@ -259,11 +308,11 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                                 ),
                                 const SizedBox(height: 20),
                                 SizedBox(
-                                  height: 122,
+                                  height: 132,
                                   child: ListView.separated(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: _categories.length,
-                                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                    separatorBuilder: (_, _) => const SizedBox(width: 12),
                                     itemBuilder: (context, index) {
                                       final category = _categories[index];
                                       return _CategoryCard(category: category);
@@ -349,12 +398,16 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
           .where('userId', isEqualTo: user.uid)
           .get();
 
-      Navigator.pop(context);
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
 
       if (cartSnapshot.docs.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.text('no_items_added_cart'))),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.text('no_items_added_cart'))),
+          );
+        }
         return;
       }
 
@@ -362,11 +415,24 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
       var total = 0;
 
       for (final doc in cartSnapshot.docs) {
+        final data = doc.data();
+        final int qty = (data['quantity'] as num).toInt();
+        final int unitPrice = (data['unitPrice'] ?? 0) is num
+            ? (data['unitPrice'] as num).toInt()
+            : int.tryParse((data['unitPrice'] ?? '0').toString()) ?? 0;
+        final int totalPrice = (data['totalPrice'] ?? 0) is num
+            ? (data['totalPrice'] as num).toInt()
+            : unitPrice * qty;
+
         items.add({
           'productName': doc['productName'],
-          'quantity': doc['quantity'],
+          'productId': data['productId']?.toString(),
+          'quantity': qty,
+          'unitPrice': unitPrice,
+          'totalPrice': totalPrice,
+          'imageUrl': data['imageUrl']?.toString(),
         });
-        total += (doc['totalPrice'] as num).toInt();
+        total += totalPrice;
       }
 
       if (context.mounted) {
@@ -381,10 +447,12 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
         );
       }
     } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.textWithArgs('error_fetching_cart', {'error': '$e'}))),
-      );
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.textWithArgs('error_fetching_cart', {'error': '$e'}))),
+        );
+      }
     }
   }
 }
@@ -451,10 +519,11 @@ class _ProductCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
-                          context.l10n.text(product.price),
+                          product.price <= 0 ? 'Request Quote' : 'Rs.${product.price}',
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF214B2D),
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -469,6 +538,8 @@ class _ProductCard extends StatelessWidget {
                   children: [
                     Text(
                       product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -478,6 +549,8 @@ class _ProductCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       product.details,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF2F6A3E),
@@ -491,32 +564,55 @@ class _ProductCard extends StatelessWidget {
                       style: TextStyle(color: Colors.grey.shade700, height: 1.45),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProductDetailsPage(product: product),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isSmallScreen = constraints.maxWidth < 360;
+                        return Row(
+                          children: [
+                            Expanded(
+                              flex: isSmallScreen ? 3 : 4,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailsPage(product: product),
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
                                 ),
-                              );
-                            },
-                            child: Text(context.l10n.text('view_details')),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          height: 52,
-                          width: 52,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F2DF),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF2F6A3E)),
-                        ),
-                      ],
+                                child: Text(
+                                  context.l10n.text('view_details'),
+                                  style: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              height: 52,
+                              width: isSmallScreen ? 44 : 52,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F2DF),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailsPage(product: product),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF2F6A3E)),
+                                iconSize: isSmallScreen ? 20 : 24,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),

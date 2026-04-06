@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
-import 'admin_orders_page.dart';
+import 'admin_dashboard_page.dart';
+import 'product_list.dart';
+import 'super_admin_dashboard_page.dart';
 import 'welcome_screen.dart';
 
 // ✅ ADDED
@@ -26,8 +28,10 @@ class _AuthScreenState extends State<AuthScreen> {
     defaultValue: 'REVOLVE_ADMIN_2026',
   );
 
-  // ✅ SUPER ADMIN CODE
-  static const String _superAdminCode = "REVOLVE_SUPER_2026";
+  static const String _defaultSuperAdminCode = String.fromEnvironment(
+    'SUPER_ADMIN_SIGNUP_CODE',
+    defaultValue: 'REVOLVE_SUPER_ADMIN_2026',
+  );
 
   bool isLogin = true;
   bool isLoading = false;
@@ -114,8 +118,30 @@ class _AuthScreenState extends State<AuthScreen> {
       }
 
       if (widget.role == 'SuperAdmin' &&
-          _adminCodeController.text.trim() != _superAdminCode) {
-        await _showValidationPopup(context.l10n.text('invalid_super_admin_code'));
+          _adminCodeController.text.trim() != _defaultSuperAdminCode) {
+        await _showValidationPopup('Invalid super admin code.');
+        return;
+      }
+    }
+
+    if (!isLogin && widget.role == 'SuperAdmin') {
+      if (_adminCodeController.text.trim().isEmpty) {
+        await _showValidationPopup('Please enter the super admin code to create a super admin account.');
+        return;
+      }
+
+      if (_adminCodeController.text.trim() != _defaultSuperAdminCode) {
+        await _showValidationPopup('Invalid super admin code.');
+        return;
+      }
+
+      final existingSuperAdmins = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'SuperAdmin')
+          .limit(1)
+          .get();
+      if (existingSuperAdmins.docs.isNotEmpty) {
+        await _showValidationPopup('Super Admin already exists. Only one Super Admin is allowed.');
         return;
       }
     }
@@ -137,10 +163,19 @@ class _AuthScreenState extends State<AuthScreen> {
         final actualRole = userDoc.data()?['role'] ?? "User";
 
         if (mounted) {
-          if (widget.role == "Admin" || widget.role == "SuperAdmin") {
+          if (actualRole == "SuperAdmin") {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+              MaterialPageRoute(
+                builder: (context) => const SuperAdminDashboardPage(),
+              ),
+            );
+          } else if (actualRole == "Admin") {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AdminDashboardPage(),
+              ),
             );
           } else {
             // ✅ CHANGED HERE
@@ -156,6 +191,7 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
 
+// Inside _handleAuth() -> else { ... signup logic }
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
@@ -164,19 +200,25 @@ class _AuthScreenState extends State<AuthScreen> {
           'name': _nameController.text.trim(),
           'phone': _phoneController.text.trim(),
           'email': _emailController.text.trim(),
-          'role': widget.role,
+          'role': widget.role, // This ensures 'SuperAdmin' is saved
           'createdAt': FieldValue.serverTimestamp(),
         });
 
         if (mounted) {
-          Navigator.pushReplacement(
+          // Use a clean navigation to avoid 'nothing happening'
+          Widget nextScreen;
+          if (widget.role == "SuperAdmin") {
+            nextScreen = const SuperAdminDashboardPage();
+          } else if (widget.role == "Admin") {
+            nextScreen = const AdminDashboardPage();
+          } else {
+            nextScreen = RevolveAgroProducts();
+          }
+
+          Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
-              builder: (context) =>
-              (widget.role == "Admin" || widget.role == "SuperAdmin")
-                  ? const AdminOrdersPage()
-                  : UserDashboard(), // ✅ CHANGED
-            ),
+            MaterialPageRoute(builder: (context) => nextScreen),
+                (route) => false,
           );
         }
       }
@@ -210,14 +252,9 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final isAdmin = widget.role == 'Admin';
     final isSuperAdmin = widget.role == 'SuperAdmin';
-    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
-
     final accent = isSuperAdmin
-        ? const Color(0xFF6A5ACD)
-        : isAdmin
-        ? const Color(0xFF8C5B1C)
-        : const Color(0xFF2F6A3E);
-
+        ? const Color(0xFF4B2A63)
+        : (isAdmin ? const Color(0xFF8C5B1C) : const Color(0xFF2F6A3E));
     final l10n = context.l10n;
 
     return Scaffold(
@@ -230,7 +267,7 @@ class _AuthScreenState extends State<AuthScreen> {
         child: SafeArea(
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + keyboardInset),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + MediaQuery.of(context).viewInsets.bottom),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -407,6 +444,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           duration: const Duration(milliseconds: 250),
                           child: Column(
                             key: ValueKey(isLogin),
+// Find the AnimatedSwitcher inside your build method and update the children:
                             children: [
                               if (!isLogin) ...[
                                 TextField(
@@ -425,20 +463,21 @@ class _AuthScreenState extends State<AuthScreen> {
                                     prefixIcon: const Icon(Icons.phone_outlined),
                                   ),
                                 ),
+                                const SizedBox(height: 14), // Added spacing
+                                // FIXED: Properly separated the Admin/SuperAdmin code field
                                 if (isAdmin || isSuperAdmin) ...[
-                                  const SizedBox(height: 14),
                                   TextField(
                                     controller: _adminCodeController,
                                     obscureText: true,
                                     decoration: InputDecoration(
                                       labelText: isSuperAdmin
-                                          ? l10n.text('super_admin_code')
+                                          ? 'Super Admin Code'
                                           : l10n.text('admin_code'),
                                       prefixIcon: const Icon(Icons.security_rounded),
                                     ),
                                   ),
+                                  const SizedBox(height: 14),
                                 ],
-                                const SizedBox(height: 14),
                               ],
                               TextField(
                                 controller: _emailController,
@@ -456,14 +495,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                   labelText: l10n.text('password'),
                                   prefixIcon: const Icon(Icons.lock_outline_rounded),
                                   suffixIcon: IconButton(
-                                    onPressed: () {
-                                      setState(() => obscurePassword = !obscurePassword);
-                                    },
-                                    icon: Icon(
-                                      obscurePassword
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                    ),
+                                    onPressed: () => setState(() => obscurePassword = !obscurePassword),
+                                    icon: Icon(obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                                   ),
                                 ),
                               ),

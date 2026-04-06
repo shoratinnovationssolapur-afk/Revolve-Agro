@@ -6,9 +6,10 @@ import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
-import 'admin_orders_page.dart';
+import 'admin_dashboard_page.dart';
 import 'auth_screen.dart';
 import 'role_selection_screen.dart';
+import 'super_admin_dashboard_page.dart';
 import 'user_dashboard.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -96,6 +97,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
         return;
       }
+      if (widget.preferredRole == 'SuperAdmin') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AuthScreen(role: 'SuperAdmin'),
+          ),
+        );
+        return;
+      }
       if (widget.preferredRole == 'User') {
         Navigator.push(
           context,
@@ -121,10 +131,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
       if (!mounted) return;
 
-      if (role == 'Admin') {
+      if (role == 'SuperAdmin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const AdminOrdersPage()),
+          MaterialPageRoute(
+            builder: (context) => const SuperAdminDashboardPage(),
+          ),
+        );
+      } else if (role == 'Admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AdminDashboardPage(),
+          ),
         );
       } else {
         Navigator.pushReplacement(
