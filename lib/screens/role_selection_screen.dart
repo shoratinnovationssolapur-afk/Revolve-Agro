@@ -4,6 +4,7 @@ import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
 import 'auth_screen.dart';
+import 'Vendor_Listing_Page.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -21,8 +22,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight - 38),
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 38),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -45,7 +45,7 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 26),
 
-                      // User Card
+                      // User/Farmer Login Card
                       _RoleCard(
                         title: l10n.text('user_login'),
                         subtitle: l10n.text('user_login_subtitle'),
@@ -62,66 +62,68 @@ class RoleSelectionScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 18),
 
-                      // Admin Card
+                      // Vendor Login Card (Replaces Admin/SuperAdmin)
                       _RoleCard(
-                        title: l10n.text('admin_login'),
-                        subtitle: l10n.text('admin_login_subtitle'),
-                        icon: Icons.admin_panel_settings_outlined,
+                        title: "Vendor Login", // You can add this to app_localizations later
+                        subtitle: "Manage your shop and fulfill farmer orders",
+                        icon: Icons.storefront_outlined,
                         accent: const Color(0xFFD9952E),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "Admin"),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Super Admin Card
-                      _RoleCard(
-                       title: l10n.text('super_admin_login'),
-                        subtitle: l10n.text('super_admin_login_subtitle'),
-                        icon: Icons.workspace_premium_outlined,
-                        accent: const Color(0xFF6A5ACD),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "SuperAdmin"),
+                              builder: (context) => const AuthScreen(role: "Vendor"),
                             ),
                           );
                         },
                       ),
 
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 30),
 
-                      // Multilingual Support Info (RESOLVED)
-                      AppGlassCard(
+                      // 🔥 NEW: VENDOR SIGNUP LINK
+                      Center(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.88),
-                                borderRadius: BorderRadius.circular(26),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      l10n.text('multilingual_support'),
-                                      style: const TextStyle(height: 1.45),
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              "Want to partner with Revolve Agro?",
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                // TODO: Navigate to your Vendor Registration Form
+                                 Navigator.push(context, MaterialPageRoute(builder: (_) => const VendorListingPage()));
+                              },
+                              child: const Text(
+                                "Register as a Vendor",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2F6A3E),
+                                  decoration: TextDecoration.underline,
+                                ),
                               ),
                             ),
                           ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Multilingual Support Info
+                      AppGlassCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(18),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  l10n.text('multilingual_support'),
+                                  style: const TextStyle(height: 1.45),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -136,6 +138,7 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 }
 
+// _RoleCard remains the same as your original snippet
 class _RoleCard extends StatelessWidget {
   final String title;
   final String subtitle;
