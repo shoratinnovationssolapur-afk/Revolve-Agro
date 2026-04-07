@@ -19,6 +19,7 @@ class Product {
   final String imageUrl;
   final int price;
   final int inventoryQuantity;
+  final List<Map<String, dynamic>> variants;
 
   Product({
     this.id,
@@ -28,25 +29,37 @@ class Product {
     required this.imageUrl,
     this.price = 0,
     this.inventoryQuantity = 999999,
+    this.variants = const [], // 🔥 ADD THIS INITIALIZER
   });
 
   factory Product.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>? ?? {};
 
-    int parseNumber(dynamic value, int defaultValue) {
+    // 🔥 This function ensures numbers are always Ints for Android
+    int toInt(dynamic value) {
       if (value is num) return value.toInt();
-      if (value is String) return int.tryParse(value) ?? defaultValue;
-      return defaultValue;
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
     }
 
     return Product(
       id: doc.id,
-      name: data['name']?.toString() ?? 'Unnamed Product',
+      name: data['name']?.toString() ?? 'Unnamed',
       details: data['details']?.toString() ?? '',
       description: data['description']?.toString() ?? '',
-      imageUrl: data['imageUrl']?.toString() ?? 'https://via.placeholder.com/800x500',
-      price: parseNumber(data['price'], 1500),
-      inventoryQuantity: parseNumber(data['inventoryQuantity'], 999),
+      imageUrl: data['imageUrl']?.toString() ?? '',
+      price: toInt(data['price']),
+      inventoryQuantity: toInt(data['inventoryQuantity']),
+
+      // 🔥 The "Android Fix": Force-cast each item in the list
+      variants: (data['variants'] as List<dynamic>?)?.map((v) {
+        final Map<dynamic, dynamic> vMap = v as Map<dynamic, dynamic>;
+        return {
+          'packingSize': vMap['packingSize']?.toString() ?? '',
+          'drpPrice': toInt(vMap['drpPrice']),
+          'mrpPrice': toInt(vMap['mrpPrice']),
+        };
+      }).toList() ?? [],
     );
   }
 }
