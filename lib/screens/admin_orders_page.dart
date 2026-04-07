@@ -244,13 +244,51 @@ class _OrderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          ...products.map((item) => Text("• ${item['productName']} (Qty: ${item['quantity']})")),
+// 🔥 NEW: Enhanced Product List with Images & Prices
+          ...products.map((item) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      item['imageUrl'] ?? '',
+                      width: 45, height: 45, fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => const Icon(Icons.shopping_basket_outlined),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item['productName'] ?? "Product", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text("Qty: ${item['quantity']} | Rate: ₹${item['unitPrice']}", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                  Text("₹${item['totalPrice']}", style: const TextStyle(fontWeight: FontWeight.w600)),
+                ],
+              ),
+            );
+          }).toList(),
+
           const Divider(height: 24),
+
+          // 🔥 NEW: Delivery Address Section
+          if (deliveryAddress != null) ...[
+            const Text("Delivery Address:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text("${deliveryAddress!['fullAddress']}", style: const TextStyle(fontSize: 14)),
+            Text("${deliveryAddress!['city']} - ${deliveryAddress!['pincode']}", style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 10),
+          ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Total Amount:"),
-              Text("Rs. $totalAmount", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2F6A3E))),
+              const Text("Final Payable Amount:", style: TextStyle(fontWeight: FontWeight.w600)),
+              Text("₹$totalAmount", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF2F6A3E))),
             ],
           ),
           if (onApprove != null) ...[
