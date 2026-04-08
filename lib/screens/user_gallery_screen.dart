@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/gallery_media_card.dart';
+import 'auth_screen.dart';
 import 'full_screen_viewer.dart';
 
 class UserGalleryScreen extends StatelessWidget {
@@ -36,6 +37,52 @@ class UserGalleryScreen extends StatelessWidget {
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator(color: Color(0xFF2F6A3E)));
+                    }
+                    if (snapshot.hasError) {
+                      final message = '${snapshot.error}';
+                      final permissionDenied =
+                          message.toLowerCase().contains('permission-denied');
+
+                      return Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AppEmptyState(
+                              icon: permissionDenied
+                                  ? Icons.lock_outline_rounded
+                                  : Icons.error_outline_rounded,
+                              title: permissionDenied
+                                  ? l10n.text('login_required')
+                                  : l10n.text('auth_failed'),
+                              subtitle: permissionDenied
+                                  ? l10n.text('user_login_subtitle')
+                                  : l10n.textWithArgs(
+                                      'database_error',
+                                      {'error': message},
+                                    ),
+                            ),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AuthScreen(
+                                        role: 'User',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.login_rounded),
+                                label: Text(l10n.text('login')),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                       return AppEmptyState(

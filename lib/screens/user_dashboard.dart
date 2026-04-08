@@ -9,8 +9,10 @@ import '../widgets/app_shell.dart';
 import '../widgets/gallery_media_card.dart';
 import 'full_screen_viewer.dart';
 import 'order_history_page.dart';
+import 'payment_page.dart';
 import 'product_list.dart';
 import 'profile_page.dart';
+import 'auth_screen.dart';
 import 'user_gallery_screen.dart';
 
 class UserDashboard extends StatefulWidget {
@@ -144,10 +146,6 @@ class _UserDashboardState extends State<UserDashboard> {
           });
         }
       });
-    } else if (mounted && location.isEmpty) {
-      setState(() {
-        location = context.l10n.text('current_location_fallback');
-      });
     }
   }
 
@@ -163,14 +161,14 @@ class _UserDashboardState extends State<UserDashboard> {
     }
 
     setState(() {
-      userName = doc.data()?['name']?.toString() ?? context.l10n.text('farmer');
+      userName = doc.data()?['name']?.toString() ?? '';
       // Don't set location here - let GPS override it
     });
   }
 
   String _resolveLocationLabel(Map<String, dynamic>? data) {
     if (data == null) {
-      return context.l10n.text('current_location_fallback');
+      return 'Current Location';
     }
 
     final city = data['city']?.toString().trim() ?? '';
@@ -189,17 +187,40 @@ class _UserDashboardState extends State<UserDashboard> {
       return fullAddress.split(',').first.trim();
     }
 
-    return context.l10n.text('current_location_fallback');
+    return 'Current Location';
   }
 
   void goToTab(int index) {
     setState(() => _currentIndex = index);
   }
 
-  void openCartOrShowMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.text('no_items_added_cart'))),
-    );
+  List<Map<String, dynamic>> _mapCartDocsToItems(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    return docs.map((doc) {
+      final data = doc.data();
+      int toInt(dynamic value) {
+        if (value is num) return value.toInt();
+        if (value is String) return int.tryParse(value) ?? 0;
+        return 0;
+      }
+
+      return {
+        'productName': data['productName'],
+        'productId': data['productId']?.toString(),
+        'quantity': toInt(data['quantity']),
+        'unitPrice': toInt(data['unitPrice']),
+        'totalPrice': toInt(data['totalPrice']),
+        'imageUrl': data['imageUrl']?.toString(),
+      };
+    }).toList();
+  }
+
+  int _computeCartTotal(List<Map<String, dynamic>> items) {
+    return items.fold<int>(0, (sum, item) {
+      final v = item['totalPrice'];
+      return sum + (v is int ? v : 0);
+    });
   }
 
   void _goToTab(int index) {
@@ -380,6 +401,20 @@ class _UserDashboardState extends State<UserDashboard> {
                   .orderBy('uploadedAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: AppEmptyState(
+                      icon: Icons.photo_library_outlined,
+                      title: l10n.text('no_gallery_images'),
+                      subtitle: l10n.textWithArgs(
+                        'database_error',
+                        {'error': '${snapshot.error}'},
+                      ),
+                    ),
+                  );
+                }
+
                 if (!snapshot.hasData) {
                   return const SliverFillRemaining(
                     hasScrollBody: false,
@@ -444,6 +479,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
   Widget _buildCart() {
     final l10n = context.l10n;
+    final user = FirebaseAuth.instance.currentUser;
     return AppShell(
       child: SafeArea(
         child: Padding(
@@ -456,19 +492,248 @@ class _UserDashboardState extends State<UserDashboard> {
                 subtitle: l10n.text('cart_checkout_subtitle'),
               ),
               const SizedBox(height: 18),
-              AppEmptyState(
-                icon: Icons.shopping_cart_checkout_outlined,
-                title: l10n.text('checkout_center'),
-                subtitle: l10n.text('checkout_center_subtitle'),
-              ),
-              const SizedBox(height: 18),
-              ElevatedButton.icon(
-                onPressed: () {
-                  openCartOrShowMessage();
-                },
-                icon: const Icon(Icons.shopping_bag_outlined),
-                label: Text(l10n.text('go_to_cart')),
-              ),
+              if (user == null)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: AppEmptyState(
+                          icon: Icons.lock_outline_rounded,
+                          title: l10n.text('login_required'),
+                          subtitle: l10n.text('please_login_view_cart'),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AuthScreen(role: 'User'),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.login_rounded),
+                          label: Text(l10n.text('login')),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            _goToTab(1);
+                          },
+                          icon: const Icon(Icons.storefront_outlined),
+                          label: Text(l10n.text('browse_products_directly')),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: FirebaseFirestore.instance
+                        .collection('cart')
+                        .where('userId', isEqualTo: user.uid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFD9952E),
+                          ),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return AppEmptyState(
+                          icon: Icons.error_outline_rounded,
+                          title: l10n.text('error_fetching_cart').replaceAll(
+                            '{error}',
+                            '${snapshot.error}',
+                          ),
+                          subtitle: l10n.text('cart_checkout_subtitle'),
+                        );
+                      }
+
+                      final docs = snapshot.data?.docs ?? const [];
+                      if (docs.isEmpty) {
+                        return AppEmptyState(
+                          icon: Icons.shopping_cart_outlined,
+                          title: l10n.text('no_items_added_cart'),
+                          subtitle: l10n.text('cart_checkout_subtitle'),
+                        );
+                      }
+
+                      final items = _mapCartDocsToItems(docs);
+                      final total = _computeCartTotal(items);
+
+                      return Column(
+                        children: [
+                          Expanded(
+                            child: ListView.separated(
+                              itemCount: items.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final item = items[index];
+                                final name = item['productName']?.toString() ??
+                                    'Product';
+                                final qty = item['quantity'] as int? ?? 0;
+                                final unit =
+                                    item['unitPrice'] as int? ?? 0;
+                                final line =
+                                    item['totalPrice'] as int? ?? 0;
+                                final imageUrl =
+                                    item['imageUrl']?.toString() ?? '';
+
+                                return Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.92),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            Colors.black.withOpacity(0.04),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(14),
+                                        child: imageUrl.trim().isEmpty
+                                            ? Container(
+                                                width: 54,
+                                                height: 54,
+                                                color: const Color(0xFFEAF1E1),
+                                                child: const Icon(
+                                                  Icons.spa_outlined,
+                                                  color: Color(0xFF2F6A3E),
+                                                ),
+                                              )
+                                            : Image.network(
+                                                imageUrl,
+                                                width: 54,
+                                                height: 54,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    Container(
+                                                  width: 54,
+                                                  height: 54,
+                                                  color:
+                                                      const Color(0xFFEAF1E1),
+                                                  child: const Icon(
+                                                    Icons.spa_outlined,
+                                                    color: Color(0xFF2F6A3E),
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              name,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                color: Color(0xFF183020),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              'Qty: $qty  ·  ₹$unit',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade700,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '₹$line',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFF2F6A3E),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 14,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF2EADA),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Text(
+                                    'Total: ₹$total',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF183020),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PaymentPage(
+                                        cartItems: items,
+                                        totalAmount: total,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.shopping_bag_outlined),
+                                label: Text(l10n.text('go_to_cart')),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFD9952E),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
             ],
           ),
         ),

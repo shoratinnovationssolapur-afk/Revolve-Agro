@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
+import 'auth_screen.dart';
 import 'payment_page.dart';
 import 'profile_page.dart';
 import 'product_details_page.dart';
@@ -135,6 +136,55 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
                       return const Center(child: CircularProgressIndicator(color: Color(0xFF2F6A3E)));
                     }
 
+                    if (snapshot.hasError) {
+                      final message = '${snapshot.error}';
+                      final permissionDenied =
+                          message.toLowerCase().contains('permission-denied');
+
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppEmptyState(
+                                icon: permissionDenied
+                                    ? Icons.lock_outline_rounded
+                                    : Icons.error_outline_rounded,
+                                title: permissionDenied
+                                    ? l10n.text('login_required')
+                                    : l10n.text('auth_failed'),
+                                subtitle: permissionDenied
+                                    ? l10n.text('user_login_subtitle')
+                                    : l10n.textWithArgs(
+                                        'database_error',
+                                        {'error': message},
+                                      ),
+                              ),
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const AuthScreen(
+                                          role: 'User',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.login_rounded),
+                                  label: Text(l10n.text('login')),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                       return Center(
                         child: Text(l10n.text('no_products_found') ?? "No products available"),
@@ -235,7 +285,32 @@ class _RevolveAgroProductsState extends State<RevolveAgroProducts> {
   Future<void> _openCart(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.text('please_login_view_cart'))));
+      final l10n = context.l10n;
+      final shouldLogin = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.text('login_required')),
+          content: Text(l10n.text('please_login_view_cart')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.text('cancel')),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context, true),
+              icon: const Icon(Icons.login_rounded),
+              label: Text(l10n.text('login')),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldLogin == true && context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AuthScreen(role: 'User')),
+        );
+      }
       return;
     }
 

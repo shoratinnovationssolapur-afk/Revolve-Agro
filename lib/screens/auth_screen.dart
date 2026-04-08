@@ -22,7 +22,8 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _AuthScreenState extends State<AuthScreen>
+    with SingleTickerProviderStateMixin {
   static const String _defaultAdminCode = String.fromEnvironment(
     'ADMIN_SIGNUP_CODE',
     defaultValue: 'REVOLVE_ADMIN_2026',
@@ -37,11 +38,22 @@ class _AuthScreenState extends State<AuthScreen> {
   bool isLoading = false;
   bool obscurePassword = true;
 
+  late final AnimationController _pageController;
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _adminCodeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..forward();
+  }
 
   String _friendlyAuthMessage(FirebaseAuthException e) {
     switch (e.code) {
@@ -240,6 +252,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
@@ -256,6 +269,10 @@ class _AuthScreenState extends State<AuthScreen> {
         ? const Color(0xFF4B2A63)
         : (isAdmin ? const Color(0xFF8C5B1C) : const Color(0xFF2F6A3E));
     final l10n = context.l10n;
+    final pageAnim = CurvedAnimation(
+      parent: _pageController,
+      curve: Curves.easeOutCubic,
+    );
 
     return Scaffold(
       body: AppShell(
@@ -265,12 +282,28 @@ class _AuthScreenState extends State<AuthScreen> {
           const Color(0xFFF5F8EE),
         ],
         child: SafeArea(
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + MediaQuery.of(context).viewInsets.bottom),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: _AgriBackdrop(
+                    accent: accent,
+                    animation: pageAnim,
+                  ),
+                ),
+              ),
+              SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  12,
+                  20,
+                  24 + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 Wrap(
                   alignment: WrapAlignment.spaceBetween,
                   crossAxisAlignment: WrapCrossAlignment.center,
@@ -285,133 +318,239 @@ class _AuthScreenState extends State<AuthScreen> {
                   ],
                 ),
                 const SizedBox(height: 18),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final compactHeader = constraints.maxWidth < 370;
-                    return Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.88),
-                        borderRadius: BorderRadius.circular(34),
-                      ),
-                      child: compactHeader
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  height: 72,
-                                  width: 72,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [accent, accent.withOpacity(0.7)],
-                                    ),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: Icon(
-                                    isSuperAdmin
-                                        ? Icons.security_rounded
-                                        : isAdmin
-                                        ? Icons.admin_panel_settings_rounded
-                                        : Icons.eco_rounded,
-                                    color: Colors.white,
-                                    size: 36,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  isSuperAdmin
-                                      ? l10n.text('super_admin_workspace')
-                                      : isAdmin
-                                      ? l10n.text('admin_workspace')
-                                      : l10n.text('farmer_workspace'),
-                                  style: TextStyle(
-                                    color: accent,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  isLogin
-                                      ? l10n.text('welcome_back')
-                                      : l10n.text('create_your_account'),
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF183020),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Row(
-                              children: [
-                                Container(
-                                  height: 72,
-                                  width: 72,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [accent, accent.withOpacity(0.7)],
-                                    ),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: Icon(
-                                    isSuperAdmin
-                                        ? Icons.security_rounded
-                                        : isAdmin
-                                        ? Icons.admin_panel_settings_rounded
-                                        : Icons.eco_rounded,
-                                    color: Colors.white,
-                                    size: 36,
-                                  ),
-                                ),
-                                const SizedBox(width: 18),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        isSuperAdmin
-                                            ? l10n.text('super_admin_workspace')
-                                            : isAdmin
-                                            ? l10n.text('admin_workspace')
-                                            : l10n.text('farmer_workspace'),
-                                        style: TextStyle(
-                                          color: accent,
-                                          fontWeight: FontWeight.w700,
+                FadeTransition(
+                  opacity: pageAnim,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.04),
+                      end: Offset.zero,
+                    ).animate(pageAnim),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compactHeader = constraints.maxWidth < 370;
+                        return Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.88),
+                            borderRadius: BorderRadius.circular(34),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.75),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 18,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          child: compactHeader
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      height: 72,
+                                      width: 72,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            accent,
+                                            accent.withOpacity(0.70),
+                                          ],
                                         ),
+                                        borderRadius: BorderRadius.circular(24),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: accent.withOpacity(0.25),
+                                            blurRadius: 18,
+                                            offset: const Offset(0, 10),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 6),
-                                      Text(
+                                      child: Icon(
+                                        isSuperAdmin
+                                            ? Icons.security_rounded
+                                            : isAdmin
+                                                ? Icons
+                                                    .admin_panel_settings_rounded
+                                                : Icons.eco_rounded,
+                                        color: Colors.white,
+                                        size: 36,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      isSuperAdmin
+                                          ? l10n.text('super_admin_workspace')
+                                          : isAdmin
+                                              ? l10n.text('admin_workspace')
+                                              : l10n.text('farmer_workspace'),
+                                      style: TextStyle(
+                                        color: accent,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 220),
+                                      child: Text(
                                         isLogin
                                             ? l10n.text('welcome_back')
                                             : l10n.text('create_your_account'),
+                                        key: ValueKey(isLogin),
                                         style: const TextStyle(
                                           fontSize: 24,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w900,
                                           color: Color(0xFF183020),
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    Container(
+                                      height: 72,
+                                      width: 72,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            accent,
+                                            accent.withOpacity(0.70),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(24),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: accent.withOpacity(0.25),
+                                            blurRadius: 18,
+                                            offset: const Offset(0, 10),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        isSuperAdmin
+                                            ? Icons.security_rounded
+                                            : isAdmin
+                                                ? Icons
+                                                    .admin_panel_settings_rounded
+                                                : Icons.eco_rounded,
+                                        color: Colors.white,
+                                        size: 36,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 18),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            isSuperAdmin
+                                                ? l10n.text(
+                                                    'super_admin_workspace')
+                                                : isAdmin
+                                                    ? l10n.text(
+                                                        'admin_workspace')
+                                                    : l10n.text(
+                                                        'farmer_workspace'),
+                                            style: TextStyle(
+                                              color: accent,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          AnimatedSwitcher(
+                                            duration: const Duration(
+                                              milliseconds: 220,
+                                            ),
+                                            child: Text(
+                                              isLogin
+                                                  ? l10n.text('welcome_back')
+                                                  : l10n.text(
+                                                      'create_your_account'),
+                                              key: ValueKey(isLogin),
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w900,
+                                                color: Color(0xFF183020),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                    );
-                  },
+                        );
+                      },
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 18),
 
                 // ===== REMAINING UI EXACT SAME =====
 
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(26),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(22),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                FadeTransition(
+                  opacity: pageAnim,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.06),
+                      end: Offset.zero,
+                    ).animate(pageAnim),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        inputDecorationTheme: InputDecorationTheme(
+                          filled: true,
+                          fillColor: const Color(0xFFF7F7F7),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(
+                              color: Colors.black.withOpacity(0.05),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(
+                              color: accent.withOpacity(0.65),
+                              width: 1.4,
+                            ),
+                          ),
+                          labelStyle: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.90),
+                          borderRadius: BorderRadius.circular(26),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.75),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 18,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(22),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                         Container(
                           padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
@@ -444,7 +583,6 @@ class _AuthScreenState extends State<AuthScreen> {
                           duration: const Duration(milliseconds: 250),
                           child: Column(
                             key: ValueKey(isLogin),
-// Find the AnimatedSwitcher inside your build method and update the children:
                             children: [
                               if (!isLogin) ...[
                                 TextField(
@@ -528,22 +666,25 @@ class _AuthScreenState extends State<AuthScreen> {
                         if (isLoading)
                           Center(child: CircularProgressIndicator(color: accent))
                         else
-                          ElevatedButton.icon(
+                          _AgriPrimaryButton(
+                            accent: accent,
+                            icon: Icons.arrow_forward_rounded,
+                            label: isLogin
+                                ? l10n.text('continue_to_dashboard')
+                                : l10n.text('create_account'),
                             onPressed: _handleAuth,
-                            style: ElevatedButton.styleFrom(backgroundColor: accent),
-                            icon: const Icon(Icons.arrow_forward_rounded),
-                            label: Text(
-                              isLogin
-                                  ? l10n.text('continue_to_dashboard')
-                                  : l10n.text('create_account'),
-                            ),
                           ),
-                      ],
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -575,6 +716,159 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AgriPrimaryButton extends StatefulWidget {
+  final Color accent;
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const _AgriPrimaryButton({
+    required this.accent,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  State<_AgriPrimaryButton> createState() => _AgriPrimaryButtonState();
+}
+
+class _AgriPrimaryButtonState extends State<_AgriPrimaryButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.accent;
+    final gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        a,
+        Color.lerp(a, const Color(0xFF2F6A3E), 0.35) ?? a,
+      ],
+    );
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 120),
+      scale: _pressed ? 0.98 : 1,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onPressed,
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTapUp: (_) => setState(() => _pressed = false),
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: a.withOpacity(0.28),
+                  blurRadius: 20,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.grass_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      widget.label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15.5,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Icon(widget.icon, color: Colors.white),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AgriBackdrop extends StatelessWidget {
+  final Color accent;
+  final Animation<double> animation;
+
+  const _AgriBackdrop({
+    required this.accent,
+    required this.animation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final leaf = Color.lerp(accent, const Color(0xFF2F6A3E), 0.45) ?? accent;
+    final seed = Color.lerp(accent, const Color(0xFFD9952E), 0.35) ?? accent;
+
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        final t = animation.value;
+        return Stack(
+          children: [
+            Positioned(
+              top: -30 + (1 - t) * 14,
+              right: -18,
+              child: Transform.rotate(
+                angle: -0.20 + (1 - t) * 0.12,
+                child: Icon(
+                  Icons.park_rounded,
+                  size: 140,
+                  color: leaf.withOpacity(0.10),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 160 + (1 - t) * 18,
+              left: -26,
+              child: Transform.rotate(
+                angle: 0.30 - (1 - t) * 0.10,
+                child: Icon(
+                  Icons.eco_rounded,
+                  size: 170,
+                  color: leaf.withOpacity(0.08),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -38 + (1 - t) * 22,
+              right: -26,
+              child: Transform.rotate(
+                angle: 0.05 + (1 - t) * 0.10,
+                child: Icon(
+                  Icons.grain_rounded,
+                  size: 190,
+                  color: seed.withOpacity(0.08),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
