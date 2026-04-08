@@ -207,9 +207,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ],
                           const SizedBox(height: 18),
-// ... existing imports ...
-
-// Replace the Container containing the Workspace Text (around line 145) with this:
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
@@ -226,7 +223,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                           ),
-// ... rest of the file remains the same ...
                         ],
                       ),
                     ),
@@ -328,7 +324,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       onPressed: _goToHome,
-                      style: ElevatedButton.styleFrom(backgroundColor: accent),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: Colors.white,
+                      ),
                       icon: Icon(isSuperAdmin ? Icons.admin_panel_settings_outlined : Icons.space_dashboard_outlined),
                       label: Text(
                         isSuperAdmin

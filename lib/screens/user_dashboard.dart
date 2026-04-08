@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/gallery_media_card.dart';
 import 'full_screen_viewer.dart';
 import 'order_history_page.dart';
 import 'product_list.dart';
@@ -199,13 +200,6 @@ class _UserDashboardState extends State<UserDashboard> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.text('no_items_added_cart'))),
     );
-  }
-
-  String _thumbnailFor(String url, String type) {
-    if (type == 'video') {
-      return url.replaceAll('.mp4', '.jpg').replaceAll('.mov', '.jpg').replaceAll('.mkv', '.jpg');
-    }
-    return url;
   }
 
   void _goToTab(int index) {
@@ -409,128 +403,35 @@ class _UserDashboardState extends State<UserDashboard> {
 
                 return SliverPadding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 14,
-                      crossAxisSpacing: 14,
-                      childAspectRatio: 1,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final data = items[index];
-                        final payload = data.data();
-                        final url = payload['url']?.toString() ?? '';
-                        final type = payload['type']?.toString() ?? 'image';
-                        final productName = payload['productName']?.toString() ?? '';
-                        final description = payload['description']?.toString() ?? '';
+                  sliver: SliverList.separated(
+                    itemCount: items.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 18),
+                    itemBuilder: (context, index) {
+                      final data = items[index];
+                      final payload = data.data();
+                      final url = payload['url']?.toString() ?? '';
+                      final type = payload['type']?.toString() ?? 'image';
+                      final productName = payload['productName']?.toString() ?? '';
+                      final description = payload['description']?.toString() ?? '';
 
-                        return Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => FullScreenViewer(
-                                    url: url,
-                                    type: type,
-                                  ),
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(24),
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.94),
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.06),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(24),
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Image.network(
-                                      _thumbnailFor(url, type),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Container(
-                                        color: const Color(0xFFE8E1D5),
-                                        alignment: Alignment.center,
-                                        child: const Icon(Icons.image_not_supported_outlined, size: 36),
-                                      ),
-                                    ),
-                                    if (type == 'video')
-                                      const Center(
-                                        child: Icon(
-                                          Icons.play_circle_fill,
-                                          color: Colors.white,
-                                          size: 48,
-                                        ),
-                                      ),
-                                    if (productName.isNotEmpty || description.isNotEmpty)
-                                      Positioned(
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                              colors: [
-                                                Colors.transparent,
-                                                Colors.black.withOpacity(0.72),
-                                              ],
-                                            ),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              if (productName.isNotEmpty)
-                                                Text(
-                                                  productName,
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
-                                                ),
-                                              if (description.isNotEmpty) ...[
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  description,
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    height: 1.3,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                      return GalleryMediaCard(
+                        url: url,
+                        type: type,
+                        title: productName,
+                        description: description,
+                        onOpen: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => FullScreenViewer(
+                                url: url,
+                                type: type,
                               ),
                             ),
-                          ),
-                        );
-                      },
-                      childCount: items.length,
-                    ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 );
               },

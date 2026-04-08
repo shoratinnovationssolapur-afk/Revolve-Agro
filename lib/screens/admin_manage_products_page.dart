@@ -22,7 +22,7 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
   final TextEditingController _addDescriptionController = TextEditingController();
 
   // 🔥 Multi-Variant Controllers (Size, DRP, MRP)
-  List<Map<String, TextEditingController>> _variantControllers = [];
+  final List<Map<String, TextEditingController>> _variantControllers = [];
 
   File? _addImageFile;
   bool _isSavingAdd = false;
@@ -47,7 +47,9 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
   void _removeVariantRow(int index) {
     if (_variantControllers.length > 1) {
       setState(() {
-        _variantControllers[index].values.forEach((c) => c.dispose());
+        for (var c in _variantControllers[index].values) {
+          c.dispose();
+        }
         _variantControllers.removeAt(index);
       });
     }
@@ -59,7 +61,9 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
     _addContentController.dispose();
     _addDescriptionController.dispose();
     for (var v in _variantControllers) {
-      v.values.forEach((c) => c.dispose());
+      for (var c in v.values) {
+        c.dispose();
+      }
     }
     super.dispose();
   }
@@ -117,7 +121,11 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
       _addDescriptionController.clear();
       setState(() {
         _addImageFile = null;
-        _variantControllers.forEach((v) => v.values.forEach((c) => c.clear()));
+        for (var v in _variantControllers) {
+          for (var c in v.values) {
+            c.clear();
+          }
+        }
       });
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product & Variants added successfully!')));
@@ -324,7 +332,7 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
                           ),
                         ],
                       );
-                    }).toList(),
+                    }),
 
                     TextButton.icon(
                       onPressed: () => setDialogState(() => editVariants.add({

@@ -391,8 +391,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
       if (kIsWeb) {
         return {
-          'fullAddress':
-              'Latitude: ${position.latitude.toStringAsFixed(6)}, Longitude: ${position.longitude.toStringAsFixed(6)}',
+          'fullAddress': context.l10n.text('current_location'),
           'landmark': context.l10n.text('current_location'),
           'city': context.l10n.text('current_location'),
           'pincode': '',
@@ -424,8 +423,7 @@ class _PaymentPageState extends State<PaymentPage> {
       }
 
       return {
-        'fullAddress':
-            'Latitude: ${position.latitude.toStringAsFixed(6)}, Longitude: ${position.longitude.toStringAsFixed(6)}',
+        'fullAddress': context.l10n.text('current_location'),
         'landmark': context.l10n.text('current_location'),
         'city': context.l10n.text('current_location'),
         'pincode': '',
@@ -558,8 +556,9 @@ class _PaymentPageState extends State<PaymentPage> {
 
       WriteBatch batch = FirebaseFirestore.instance.batch();
       DocumentReference orderRef = FirebaseFirestore.instance.collection('orders').doc();
+      final timestamp = DateTime.now();
 
-      // 2. Add 'userName' to the order document
+      // 2. Add 'userName' to the order document with status history
       batch.set(orderRef, {
         'userId': user.uid,
         'userName': userName, // CRITICAL for Admin side filtering
@@ -577,6 +576,15 @@ class _PaymentPageState extends State<PaymentPage> {
         'paymentStatus': 'Paid',
         'timestamp': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
+        // New fields for enhanced order management
+        'statusHistory': [
+          {
+            'status': 'pending',
+            'timestamp': timestamp,
+          }
+        ],
+        'trackingStatus': 'none',
+        'rejectionReason': null,
       });
 
       for (var doc in cartSnapshot.docs) {
