@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
-import 'welcome_screen.dart';
 import 'admin_gallery_screen.dart';
 
 class AdminOrdersPage extends StatefulWidget {

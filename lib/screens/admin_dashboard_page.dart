@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'admin_manage_products_page.dart';
 import 'admin_orders_page.dart';
-import 'manage_admins_page.dart';
 import '../widgets/language_selector.dart';
 import 'welcome_screen.dart';
 import 'admin_gallery_screen.dart'; // ✅ Added

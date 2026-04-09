@@ -220,7 +220,7 @@ class OrderStatusCard extends StatelessWidget {
   final int productCount;
   final DateTime? orderDate;
 
-  const OrderStatusCard({
+  const OrderStatusCard({super.key, 
     required this.orderId,
     required this.status,
     required this.totalAmount,

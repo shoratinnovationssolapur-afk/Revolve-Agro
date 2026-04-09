@@ -154,7 +154,7 @@ class _AdminManageProductsPageState extends State<AdminManageProductsPage> {
                       'description': descController.text.trim(),
                       'packingSize': packingController.text.trim(),
                       'price': int.tryParse(priceController.text.trim()) ?? 0,
-                      if (newUrl != null) 'imageUrl': newUrl,
+                      'imageUrl': ?newUrl,
                       'updatedAt': FieldValue.serverTimestamp(),
                     });
                     if (context.mounted) Navigator.pop(context);
