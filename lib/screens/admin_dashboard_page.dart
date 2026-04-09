@@ -6,8 +6,61 @@ import 'welcome_screen.dart';
 import 'admin_gallery_screen.dart'; // ✅ Added
 import 'profile_page.dart'; // ✅ Added
 
-class AdminDashboardPage extends StatelessWidget {
+class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
+
+  @override
+  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
+}
+
+class _AdminDashboardPageState extends State<AdminDashboardPage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  final List<_DashboardItem> _items = const [
+    _DashboardItem(
+      label: 'View Orders',
+      subtitle: 'Track and approve orders',
+      icon: Icons.inbox_rounded,
+      color: Color(0xFF2F6A3E),
+      destination: AdminOrdersPage(),
+    ),
+    _DashboardItem(
+      label: 'Manage Products',
+      subtitle: 'Add, edit, and update stock',
+      icon: Icons.inventory_2_rounded,
+      color: Color(0xFFD9952E),
+      destination: AdminManageProductsPage(),
+    ),
+    _DashboardItem(
+      label: 'Manage Gallery',
+      subtitle: 'Update images and posters',
+      icon: Icons.photo_library_rounded,
+      color: Color(0xFF1E5631),
+      destination: AdminGalleryScreen(),
+    ),
+    _DashboardItem(
+      label: 'Profile Settings',
+      subtitle: 'Manage admin preferences',
+      icon: Icons.admin_panel_settings_rounded,
+      color: Color(0xFF333333),
+      destination: ProfilePage(role: 'Admin'),
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,64 +128,99 @@ class AdminDashboardPage extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
-                  child: SingleChildScrollView(
+                  child: CustomScrollView(
                     physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // 1. MANAGE MEMBERS
-
-                        // 2. VIEW ORDERS
-                        _menuButton(
-                          context,
-                          label: 'View Orders',
-                          icon: Icons.inbox_rounded,
-                          color: const Color(0xFF2F6A3E),
-                          destination: const AdminOrdersPage(),
-                        ),
-
-                        // 3. MANAGE PRODUCTS
-                        _menuButton(
-                          context,
-                          label: 'Manage Products',
-                          icon: Icons.inventory_2_rounded,
-                          color: const Color(0xFFD9952E),
-                          destination: const AdminManageProductsPage(),
-                        ),
-
-                        // 4. MANAGE GALLERY (New)
-                        _menuButton(
-                          context,
-                          label: 'Manage Gallery',
-                          icon: Icons.photo_library_rounded,
-                          color: const Color(0xFF1E5631),
-                          destination: const AdminGalleryScreen(),
-                        ),
-
-                        // 5. PROFILE SETTINGS (New)
-                        _menuButton(
-                          context,
-                          label: 'Profile Settings',
-                          icon: Icons.admin_panel_settings_rounded,
-                          color: const Color(0xFF333333),
-                          destination: const ProfilePage(role: 'Admin'),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        Text(
-                          'Workspace for Revolve Agro management.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w600,
-                            height: 1.4,
+                    slivers: [
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: 14),
+                          child: _QuickStatsStrip(
+                            accent: Color(0xFF2F6A3E),
+                            items: [
+                              _StatChip(
+                                label: 'Orders',
+                                icon: Icons.receipt_long_rounded,
+                              ),
+                              _StatChip(
+                                label: 'Products',
+                                icon: Icons.inventory_2_rounded,
+                              ),
+                              _StatChip(
+                                label: 'Gallery',
+                                icon: Icons.photo_library_rounded,
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                      SliverLayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = constraints.crossAxisExtent;
+                          final crossAxisCount = width >= 900
+                              ? 4
+                              : width >= 640
+                                  ? 3
+                                  : 2;
 
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+                          return SliverPadding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            sliver: SliverGrid(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final item = _items[index];
+                                  final t = index / (_items.length + 2);
+                                  final animation = CurvedAnimation(
+                                    parent: _controller,
+                                    curve: Interval(
+                                      (0.12 + t).clamp(0.0, 1.0),
+                                      (0.85 + t).clamp(0.0, 1.0),
+                                      curve: Curves.easeOutCubic,
+                                    ),
+                                  );
+
+                                  return _DashboardTile(
+                                    item: item,
+                                    animation: animation,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              item.destination,
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                                childCount: _items.length,
+                              ),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                mainAxisSpacing: 14,
+                                crossAxisSpacing: 14,
+                                childAspectRatio:
+                                    crossAxisCount >= 3 ? 1.35 : 1.18,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 30),
+                          child: Text(
+                            'Workspace for Revolve Agro management.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -144,36 +232,196 @@ class AdminDashboardPage extends StatelessWidget {
   }
 
   // ✅ HELPER METHOD FOR MENU BUTTONS
-  Widget _menuButton(
-      BuildContext context, {
-        required String label,
-        required IconData icon,
-        required Color color,
-        required Widget destination,
-      }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: ElevatedButton.icon(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => destination),
-          );
-        },
-        icon: Icon(icon, size: 24),
-        label: Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+}
+
+class _DashboardItem {
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final Widget destination;
+
+  const _DashboardItem({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.destination,
+  });
+}
+
+class _DashboardTile extends StatelessWidget {
+  final _DashboardItem item;
+  final Animation<double> animation;
+  final VoidCallback onTap;
+
+  const _DashboardTile({
+    required this.item,
+    required this.animation,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = Color.lerp(item.color, Colors.white, 0.90)!;
+    final border = Color.lerp(item.color, Colors.white, 0.72)!;
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.08),
+          end: Offset.zero,
+        ).animate(animation),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.98, end: 1).animate(animation),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(24),
+              child: Ink(
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: border, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 14,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: item.color.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Icon(item.icon, color: item.color),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.grey.shade600,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        item.label,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        item.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.25,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _StatChip {
+  final String label;
+  final IconData icon;
+
+  const _StatChip({required this.label, required this.icon});
+}
+
+class _QuickStatsStrip extends StatelessWidget {
+  final Color accent;
+  final List<_StatChip> items;
+
+  const _QuickStatsStrip({
+    required this.accent,
+    required this.items,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.65),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.55)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: items
+            .map(
+              (item) => _QuickChip(
+                icon: item.icon,
+                label: item.label,
+                color: accent,
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _QuickChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _QuickChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w700,
+              fontSize: 12.5,
+            ),
+          ),
+        ],
       ),
     );
   }

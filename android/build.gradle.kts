@@ -1,4 +1,3 @@
-// 🔥 Plugins section merged from incoming branch
 plugins {
     id("com.android.application") apply false
     id("com.android.library") apply false

@@ -36,12 +36,13 @@ class ManageAdminsPage extends StatelessWidget {
     required BuildContext context,
     required String userId,
     required String name,
+    required String role,
   }) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete user?'),
-        content: Text('Delete $name from members list?'),
+        content: Text('Delete $name ($role) from members list?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -169,6 +170,12 @@ class ManageAdminsPage extends StatelessWidget {
 
                         final isSelf = currentUser?.uid == uid;
                         final isSuperAdmin = role == 'SuperAdmin';
+                        final canDeleteAsSuperAdmin =
+                            isCurrentUserSuperAdmin && !isSelf && !isSuperAdmin;
+                        final canDeleteAsAdmin = isCurrentUserAdmin &&
+                            !isSelf &&
+                            !isSuperAdmin &&
+                            role == 'User';
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -273,19 +280,46 @@ class ManageAdminsPage extends StatelessWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
-                                    onPressed: (isSelf || isSuperAdmin || role != 'User')
-                                        ? null
-                                        : () => _deleteUserRecord(
+                                    onPressed: canDeleteAsAdmin
+                                        ? () => _deleteUserRecord(
                                               context: context,
                                               userId: uid,
                                               name: name,
-                                            ),
+                                              role: role,
+                                            )
+                                        : null,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
                                       foregroundColor: Colors.white,
                                     ),
                                     icon: const Icon(Icons.delete_outline_rounded),
                                     label: const Text('Delete User'),
+                                  ),
+                                ),
+                              ],
+                              if (isCurrentUserSuperAdmin) ...[
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: canDeleteAsSuperAdmin
+                                        ? () => _deleteUserRecord(
+                                              context: context,
+                                              userId: uid,
+                                              name: name,
+                                              role: role,
+                                            )
+                                        : null,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    icon: const Icon(Icons.delete_outline_rounded),
+                                    label: Text(
+                                      role == 'Admin'
+                                          ? 'Delete Admin'
+                                          : 'Delete User',
+                                    ),
                                   ),
                                 ),
                               ],

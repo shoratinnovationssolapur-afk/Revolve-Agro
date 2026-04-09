@@ -3,19 +3,12 @@ import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/gallery_media_card.dart';
+import 'auth_screen.dart';
 import 'full_screen_viewer.dart';
 
 class UserGalleryScreen extends StatelessWidget {
   const UserGalleryScreen({super.key});
-
-  // Helper to generate a thumbnail URL from a Cloudinary video URL
-  String _getThumbnail(String url, String type) {
-    if (type == 'video') {
-      // Replaces .mp4 with .jpg so Cloudinary serves a preview frame
-      return url.replaceAll('.mp4', '.jpg').replaceAll('.mov', '.jpg').replaceAll('.mkv', '.jpg');
-    }
-    return url;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +38,52 @@ class UserGalleryScreen extends StatelessWidget {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator(color: Color(0xFF2F6A3E)));
                     }
+                    if (snapshot.hasError) {
+                      final message = '${snapshot.error}';
+                      final permissionDenied =
+                          message.toLowerCase().contains('permission-denied');
+
+                      return Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AppEmptyState(
+                              icon: permissionDenied
+                                  ? Icons.lock_outline_rounded
+                                  : Icons.error_outline_rounded,
+                              title: permissionDenied
+                                  ? l10n.text('login_required')
+                                  : l10n.text('auth_failed'),
+                              subtitle: permissionDenied
+                                  ? l10n.text('user_login_subtitle')
+                                  : l10n.textWithArgs(
+                                      'database_error',
+                                      {'error': message},
+                                    ),
+                            ),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AuthScreen(
+                                        role: 'User',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.login_rounded),
+                                label: Text(l10n.text('login')),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                       return AppEmptyState(
                         icon: Icons.perm_media_outlined,
@@ -53,15 +92,10 @@ class UserGalleryScreen extends StatelessWidget {
                       );
                     }
 
-                    return GridView.builder(
+                    return ListView.separated(
                       padding: const EdgeInsets.all(18),
                       itemCount: snapshot.data!.docs.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 14,
-                        childAspectRatio: 1,
-                      ),
+                      separatorBuilder: (_, _) => const SizedBox(height: 18),
                       itemBuilder: (context, index) {
                         final media = snapshot.data!.docs[index];
                         final payload = media.data();
@@ -70,8 +104,12 @@ class UserGalleryScreen extends StatelessWidget {
                         final productName = payload['productName']?.toString() ?? '';
                         final description = payload['description']?.toString() ?? '';
 
-                        return GestureDetector(
-                          onTap: () {
+                        return GalleryMediaCard(
+                          url: url,
+                          type: type,
+                          title: productName,
+                          description: description,
+                          onOpen: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -82,92 +120,6 @@ class UserGalleryScreen extends StatelessWidget {
                               ),
                             );
                           },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: Colors.white.withOpacity(0.94),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.06),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(20),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  // Shows actual image or generated video thumbnail
-                                  Image.network(
-                                    _getThumbnail(url, type),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, e, s) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                                    ),
-                                  ),
-                                  if (type == 'video')
-                                    const Center(
-                                      child: Icon(
-                                        Icons.play_circle_fill,
-                                        color: Colors.white,
-                                        size: 52,
-                                      ),
-                                    ),
-                                  if (productName.isNotEmpty || description.isNotEmpty)
-                                    Positioned(
-                                      left: 0,
-                                      right: 0,
-                                      bottom: 0,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black.withOpacity(0.72),
-                                            ],
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            if (productName.isNotEmpty)
-                                              Text(
-                                                productName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                              ),
-                                            if (description.isNotEmpty) ...[
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                description,
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  height: 1.3,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
                         );
                       },
                     );

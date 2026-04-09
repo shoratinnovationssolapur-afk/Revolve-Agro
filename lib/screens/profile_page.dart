@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
 import 'admin_dashboard_page.dart';
 import 'auth_screen.dart';
@@ -26,7 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<DocumentSnapshot<Map<String, dynamic>>> _loadProfile() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      throw Exception('No logged-in user');
+      return Future.error(StateError('No logged-in user'));
     }
     return FirebaseFirestore.instance.collection('users').doc(user.uid).get();
   }
@@ -101,6 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
     final isAdmin = widget.role == 'Admin';
     final isSuperAdmin = widget.role == 'SuperAdmin';
     final isAnyAdmin = isAdmin || isSuperAdmin;
@@ -109,6 +111,82 @@ class _ProfilePageState extends State<ProfilePage> {
         ? const Color(0xFF4B2A63)
         : (isAdmin ? const Color(0xFF8C5B1C) : const Color(0xFF2F6A3E));
     final l10n = context.l10n;
+
+    if (currentUser == null) {
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                accent.withOpacity(0.14),
+                const Color(0xFFF7F3E8),
+                Colors.white,
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      IconButton.filledTonal(
+                        onPressed: _goToWelcome,
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
+                      const Spacer(),
+                      const LanguageSelector(),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Expanded(
+                    child: Center(
+                      child: AppEmptyState(
+                        icon: Icons.lock_outline_rounded,
+                        title: l10n.text('login_required'),
+                        subtitle: l10n.text('user_login_subtitle'),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AuthScreen(role: widget.role),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.login_rounded),
+                      label: Text(l10n.text('login')),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _goToHome,
+                      icon: const Icon(Icons.storefront_outlined),
+                      label: Text(l10n.text('browse_products_directly')),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: Container(
@@ -207,9 +285,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ],
                           const SizedBox(height: 18),
-// ... existing imports ...
-
-// Replace the Container containing the Workspace Text (around line 145) with this:
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
@@ -226,7 +301,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                           ),
-// ... rest of the file remains the same ...
                         ],
                       ),
                     ),
@@ -328,7 +402,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       onPressed: _goToHome,
-                      style: ElevatedButton.styleFrom(backgroundColor: accent),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: Colors.white,
+                      ),
                       icon: Icon(isSuperAdmin ? Icons.admin_panel_settings_outlined : Icons.space_dashboard_outlined),
                       label: Text(
                         isSuperAdmin

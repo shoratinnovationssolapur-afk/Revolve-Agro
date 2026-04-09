@@ -1,1 +1,25 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"revolveagro-9e98e","appId":"1:1053670723199:android:91ad0d114639539f0d794a","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"revolveagro-9e98e","configurations":{"android":"1:1053670723199:android:91ad0d114639539f0d794a","ios":"1:1053670723199:ios:67ea434452dc05290d794a"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "revolveagro-9e98e",
+          "appId": "1:1053670723199:android:91ad0d114639539f0d794a",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "revolveagro-9e98e",
+          "configurations": {
+            "android": "1:1053670723199:android:91ad0d114639539f0d794a",
+            "ios": "1:1053670723199:ios:67ea434452dc05290d794a"
+          }
+        }
+      }
+    }
+  }
+}
