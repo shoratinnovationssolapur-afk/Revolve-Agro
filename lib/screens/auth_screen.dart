@@ -162,17 +162,33 @@ class _AuthScreenState extends State<AuthScreen>
 
     try {
       if (isLogin) {
+        // Inside _handleAuth() -> if (isLogin) { ... }
+
         final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
+// 1. Fetch the user document
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
             .get();
 
-        final actualRole = userDoc.data()?['role'] ?? "User";
+// 2. CHECK IF BLOCKED OR DELETED
+        final data = userDoc.data();
+        if (!userDoc.exists || data?['role'] == 'Blocked' || data?['isDeleted'] == true) {
+          await FirebaseAuth.instance.signOut(); // 🔥 Force Logout
+          if (mounted) {
+            setState(() => isLoading = false);
+            await _showValidationPopup("This account has been deactivated or deleted by the Admin.");
+          }
+          return; // Stop the login process
+        }
+
+        final actualRole = data?['role'] ?? "User";
+
+// ... existing navigation logic (SuperAdmin, Admin, UserDashboard) ...
 
         if (mounted) {
           if (actualRole == "SuperAdmin") {
