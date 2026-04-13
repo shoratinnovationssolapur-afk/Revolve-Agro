@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'admin_manage_products_page.dart';
 import 'admin_orders_page.dart';
 import '../widgets/language_selector.dart';
+import '../utils/helpline.dart';
 import 'welcome_screen.dart';
 import 'admin_gallery_screen.dart'; // ✅ Added
 import 'profile_page.dart'; // ✅ Added
@@ -116,6 +117,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                           ),
                         ),
                       ),
+                      IconButton.filledTonal(
+                        tooltip: 'Helpline (WhatsApp)',
+                        onPressed: () => openHelplineWhatsApp(context),
+                        icon: const Icon(Icons.support_agent_rounded),
+                      ),
+                      const SizedBox(width: 8),
                       const LanguageSelector(),
                     ],
                   ),
@@ -131,7 +138,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                   child: CustomScrollView(
                     physics: const BouncingScrollPhysics(),
                     slivers: [
-                      const SliverToBoxAdapter(
+                      SliverToBoxAdapter(
                         child: Padding(
                           padding: EdgeInsets.only(bottom: 14),
                           child: _QuickStatsStrip(
@@ -140,14 +147,40 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                               _StatChip(
                                 label: 'Orders',
                                 icon: Icons.receipt_long_rounded,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AdminOrdersPage(),
+                                    ),
+                                  );
+                                },
                               ),
                               _StatChip(
                                 label: 'Products',
                                 icon: Icons.inventory_2_rounded,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          AdminManageProductsPage(),
+                                    ),
+                                  );
+                                },
                               ),
                               _StatChip(
                                 label: 'Gallery',
                                 icon: Icons.photo_library_rounded,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AdminGalleryScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -160,7 +193,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                               ? 4
                               : width >= 640
                                   ? 3
-                                  : 2;
+                                  : width < 310
+                                      ? 1
+                                      : 2;
+                          final childAspectRatio = crossAxisCount == 1
+                              ? 1.8
+                              : crossAxisCount >= 3
+                                  ? 1.35
+                                  : width < 360
+                                      ? 0.95
+                                      : 1.18;
 
                           return SliverPadding(
                             padding: const EdgeInsets.only(bottom: 18),
@@ -199,8 +241,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                                 crossAxisCount: crossAxisCount,
                                 mainAxisSpacing: 14,
                                 crossAxisSpacing: 14,
-                                childAspectRatio:
-                                    crossAxisCount >= 3 ? 1.35 : 1.18,
+                                childAspectRatio: childAspectRatio,
                               ),
                             ),
                           );
@@ -265,9 +306,10 @@ class _DashboardTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final surface = Color.lerp(item.color, Colors.white, 0.90)!;
     final border = Color.lerp(item.color, Colors.white, 0.72)!;
+    final opacity = Tween<double>(begin: 0.01, end: 1).animate(animation);
 
     return FadeTransition(
-      opacity: animation,
+      opacity: opacity,
       child: SlideTransition(
         position: Tween<Offset>(
           begin: const Offset(0, 0.08),
@@ -320,6 +362,8 @@ class _DashboardTile extends StatelessWidget {
                       const SizedBox(height: 14),
                       Text(
                         item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -352,8 +396,9 @@ class _DashboardTile extends StatelessWidget {
 class _StatChip {
   final String label;
   final IconData icon;
+  final VoidCallback? onTap;
 
-  const _StatChip({required this.label, required this.icon});
+  const _StatChip({required this.label, required this.icon, this.onTap});
 }
 
 class _QuickStatsStrip extends StatelessWidget {
@@ -374,14 +419,18 @@ class _QuickStatsStrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withOpacity(0.55)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 10,
+        runSpacing: 10,
         children: items
             .map(
               (item) => _QuickChip(
                 icon: item.icon,
                 label: item.label,
                 color: accent,
+                onTap: item.onTap,
               ),
             )
             .toList(),
@@ -394,34 +443,49 @@ class _QuickChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   const _QuickChip({
     required this.icon,
     required this.label,
     required this.color,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade800,
-              fontWeight: FontWeight.w700,
-              fontSize: 12.5,
-            ),
+    final borderRadius = BorderRadius.circular(14);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: borderRadius,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: borderRadius,
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.grey.shade800,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
