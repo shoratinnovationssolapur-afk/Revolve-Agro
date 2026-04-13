@@ -577,7 +577,7 @@ class _UserDashboardState extends State<UserDashboard> {
                           Expanded(
                             child: ListView.separated(
                               itemCount: items.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final item = items[index];
@@ -625,7 +625,7 @@ class _UserDashboardState extends State<UserDashboard> {
                                                 width: 54,
                                                 height: 54,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) =>
+                                                errorBuilder: (_, _, _) =>
                                                     Container(
                                                   width: 54,
                                                   height: 54,
