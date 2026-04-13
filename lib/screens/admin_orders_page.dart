@@ -13,7 +13,7 @@ class AdminOrdersPage extends StatefulWidget {
 }
 
 class _AdminOrdersPageState extends State<AdminOrdersPage> {
-  String _selectedStatus = 'pending'; // pending, approved, rejected
+  String _selectedStatus = 'pending';
 
   @override
   Widget build(BuildContext context) {

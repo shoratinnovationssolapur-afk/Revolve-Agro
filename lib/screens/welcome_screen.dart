@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
+import '../utils/helpline.dart';
 import 'admin_dashboard_page.dart';
 import 'auth_screen.dart';
 import 'role_selection_screen.dart';
@@ -439,6 +440,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                                 : null,
                                             icon: const Icon(Icons.storefront_outlined),
                                             label: Text(l10n.text('browse_products_directly')),
+                                          ),
+                                          SizedBox(height: compactLayout ? 10 : 12),
+                                          OutlinedButton.icon(
+                                            onPressed: () => openHelplineWhatsApp(context),
+                                            icon: const Icon(Icons.support_agent_rounded),
+                                            label: const Text('Helpline (WhatsApp)'),
                                           ),
                                           if (!widget.firebaseReady) ...[
                                             SizedBox(height: compactLayout ? 10 : 14),

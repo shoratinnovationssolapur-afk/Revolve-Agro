@@ -43,7 +43,7 @@ const transporter = nodemailer.createTransport({
 ```
 
 ---
-
+'
 ### Option 2: SendGrid (More Reliable)
 
 #### Step 1: Create SendGrid Account

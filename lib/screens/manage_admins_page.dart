@@ -63,7 +63,10 @@ class ManageAdminsPage extends StatelessWidget {
     if (shouldDelete != true) return;
 
     try {
-      await FirebaseFirestore.instance.collection('users').doc(userId).delete();
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'isDeleted': true,
+        'role': 'Blocked',
+      });
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('User deleted from database.')),
