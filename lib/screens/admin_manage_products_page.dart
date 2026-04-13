@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'cloudinary_service.dart';
-import 'welcome_screen.dart';
 
 class AdminManageProductsPage extends StatefulWidget {
   const AdminManageProductsPage({super.key});

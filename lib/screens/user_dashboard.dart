@@ -7,6 +7,7 @@ import 'package:geocoding/geocoding.dart';
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/gallery_media_card.dart';
+import '../utils/helpline.dart';
 import 'full_screen_viewer.dart';
 import 'order_history_page.dart';
 import 'payment_page.dart';
@@ -289,6 +290,11 @@ class _UserDashboardState extends State<UserDashboard> {
                       ),
                       actions: [
                         IconButton.filledTonal(
+                          tooltip: 'Helpline (WhatsApp)',
+                          onPressed: () => openHelplineWhatsApp(context),
+                          icon: const Icon(Icons.support_agent_rounded),
+                        ),
+                        IconButton.filledTonal(
                           onPressed: () => goToTab(3),
                           icon: const Icon(Icons.person_outline_rounded),
                         ),
@@ -299,6 +305,8 @@ class _UserDashboardState extends State<UserDashboard> {
                       child: LayoutBuilder(
                         builder: (context, boxConstraints) {
                           final isCompact = boxConstraints.maxWidth < 360;
+                          final crossAxisCount =
+                              boxConstraints.maxWidth < 330 ? 1 : 2;
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -316,10 +324,14 @@ class _UserDashboardState extends State<UserDashboard> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: _quickModules.length,
                                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
+                                  crossAxisCount: crossAxisCount,
                                   mainAxisSpacing: 12,
                                   crossAxisSpacing: 12,
-                                  childAspectRatio: isCompact ? 0.96 : 1.08,
+                                  childAspectRatio: crossAxisCount == 1
+                                      ? 1.8
+                                      : isCompact
+                                          ? 0.96
+                                          : 1.08,
                                 ),
                                 itemBuilder: (context, index) {
                                   final module = _quickModules[index];
@@ -577,7 +589,7 @@ class _UserDashboardState extends State<UserDashboard> {
                           Expanded(
                             child: ListView.separated(
                               itemCount: items.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final item = items[index];
@@ -625,7 +637,7 @@ class _UserDashboardState extends State<UserDashboard> {
                                                 width: 54,
                                                 height: 54,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) =>
+                                                errorBuilder: (_, _, _) =>
                                                     Container(
                                                   width: 54,
                                                   height: 54,
