@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1053670723199-1lfd3r6aac3etapdega4v7jidlrvhlbt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.revolveagro",
+            "certificate_hash": "6980c2d4b43143d4575a9cfacce26c3bc815faac"
+          }
+        },
+        {
           "client_id": "1053670723199-i069l1kols7m3fvigel77qfc6tpifpns.apps.googleusercontent.com",
           "client_type": 3
         }
