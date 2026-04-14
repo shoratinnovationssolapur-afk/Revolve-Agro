@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import '../widgets/language_selector.dart';
-import '../utils/helpline.dart';
+import '../../widgets/language_selector.dart';
+import '../../utils/helpline.dart';
 import 'admin_manage_products_page.dart';
 import 'admin_orders_page.dart';
-import 'manage_admins_page.dart';
-import 'welcome_screen.dart';
+import '../manage_admins_page.dart';
+import '../welcome_screen.dart';
 import 'admin_gallery_screen.dart'; // ✅ Added
-import 'profile_page.dart'; // ✅ Added
+import '../profile_page.dart'; // ✅ Added
+import 'admin_custom_push_page.dart';
 
 class SuperAdminDashboardPage extends StatefulWidget {
   const SuperAdminDashboardPage({super.key});
@@ -40,6 +41,14 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage>
       icon: Icons.inventory_2_rounded,
       color: Color(0xFFD9952E),
       destination: AdminManageProductsPage(),
+    ),
+    // 🔥 NEW PUSH NOTIFICATION ITEM
+    _DashboardItem(
+      label: 'Push Notifications',
+      subtitle: 'Send simple, paragraph or banners',
+      icon: Icons.notifications_active_rounded,
+      color: Color(0xFF5E35B1), // Indigo color
+      destination: AdminCustomPushPage(),
     ),
     _DashboardItem(
       label: 'Manage Gallery',

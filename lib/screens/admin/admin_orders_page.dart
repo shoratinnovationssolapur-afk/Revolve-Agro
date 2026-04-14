@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 
-import '../app_localizations.dart';
+import '../../app_localizations.dart';
 import 'admin_gallery_screen.dart';
 
 class AdminOrdersPage extends StatefulWidget {
