@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 import '../app_localizations.dart';
 import '../widgets/language_selector.dart';
 import '../utils/helpline.dart';
-import 'admin_dashboard_page.dart';
+import 'admin/admin_dashboard_page.dart';
 import 'auth_screen.dart';
 import 'role_selection_screen.dart';
-import 'super_admin_dashboard_page.dart';
+import 'admin/super_admin_dashboard_page.dart';
 import 'user_dashboard.dart';
 import 'product_list.dart';
 

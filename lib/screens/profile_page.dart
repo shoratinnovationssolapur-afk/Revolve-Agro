@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
-import 'admin_dashboard_page.dart';
+import 'admin/admin_dashboard_page.dart';
 import 'auth_screen.dart';
 import 'product_list.dart';
-import 'super_admin_dashboard_page.dart';
+import 'admin/super_admin_dashboard_page.dart';
 import 'welcome_screen.dart';
 
 class ProfilePage extends StatefulWidget {

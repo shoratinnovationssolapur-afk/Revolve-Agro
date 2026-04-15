@@ -1,13 +1,67 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart'; // ✅ Added
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // ✅ Added
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_localizations.dart';
 import 'firebase_options.dart';
 import 'screens/welcome_screen.dart';
 
-void main() {
+
+// --- 1. DEFINE NOTIFICATION CHANNEL (Matches Python Backend) ---
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'agro_channel', // 🔥 CRITICAL: Must match Python backend channel_id
+  'Agro Notifications',
+  description: 'Used for important updates from Revolve Agro.',
+  importance: Importance.max,
+  playSound: true,
+);
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+// --- 2. BACKGROUND MESSAGE HANDLER ---
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+}
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // --- FIX FOR LINE 48: Local Notifications Init ---
+  const AndroidInitializationSettings initializationSettingsAndroid =
+  AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  // Use 'settings:' named parameter here
+  await flutterLocalNotificationsPlugin.initialize(
+    settings: initializationSettings,
+  );
+
+  // --- FIX FOR LINE 61-62: Create Channel ---
+  // In v21.0.0, use the 'channel' named parameter
+// Change this line:
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel); // Removed 'channel:' parameter name
+
+  // --- Notification Setup ---
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  await messaging.requestPermission(alert: true, badge: true, sound: true);
+
+  await messaging.subscribeToTopic("agro_members");
+  print("✅ Successfully subscribed to agro_members");
+
   runApp(const RevolveAgroApp());
 }
 
@@ -43,7 +97,6 @@ class RevolveAgroApp extends StatelessWidget {
             useMaterial3: true,
             colorScheme: colorScheme,
             scaffoldBackgroundColor: const Color(0xFFF7F3E8),
-            // ... (Your existing theme data remains the same)
           ),
           home: const _AppBootstrap(),
         );
@@ -51,6 +104,8 @@ class RevolveAgroApp extends StatelessWidget {
     );
   }
 }
+
+// --- KEEPING YOUR BOOTSTRAP & ANIMATION CODE EXACTLY AS IS ---
 
 class _AppBootstrap extends StatefulWidget {
   const _AppBootstrap();
@@ -69,7 +124,6 @@ class _AppBootstrapState extends State<_AppBootstrap> {
     _initialization = Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    // 🔥 UPDATED: Set to 4000ms (4 seconds) as requested
     _introDelay = Future<void>.delayed(const Duration(milliseconds: 4000));
   }
 
@@ -78,7 +132,6 @@ class _AppBootstrapState extends State<_AppBootstrap> {
     return FutureBuilder<void>(
       future: _introDelay,
       builder: (context, snapshot) {
-        // Show splash screen while the 4-second timer is running
         if (snapshot.connectionState != ConnectionState.done) {
           return const _IntroSplashScreen();
         }
@@ -92,12 +145,10 @@ class _AppBootstrapState extends State<_AppBootstrap> {
               );
             }
 
-            // Once 4 seconds are up AND Firebase is ready, go to WelcomeScreen
             if (firebaseSnapshot.connectionState == ConnectionState.done) {
               return const WelcomeScreen();
             }
 
-            // Fallback while Firebase finishes if it takes > 4 seconds
             return const _IntroSplashScreen();
           },
         );
@@ -122,7 +173,6 @@ class _IntroSplashScreenState extends State<_IntroSplashScreen>
   @override
   void initState() {
     super.initState();
-    // 🔥 UPDATED: Slowed down the animation for a smoother feel
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -130,7 +180,7 @@ class _IntroSplashScreenState extends State<_IntroSplashScreen>
 
     _fade = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeIn, // Smooth fade in
+      curve: Curves.easeIn,
     );
 
     _scale = Tween<double>(begin: 0.85, end: 1.0).animate(
@@ -156,7 +206,7 @@ class _IntroSplashScreenState extends State<_IntroSplashScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF183020), // Darker green for a premium look
+              Color(0xFF183020),
               Color(0xFF2F6A3E),
             ],
           ),
