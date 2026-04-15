@@ -74,6 +74,11 @@ class _AppBootstrapState extends State<_AppBootstrap> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<void>(
       future: _introDelay,
