@@ -37,10 +37,17 @@ android {
     }
 }
 
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+
 flutter {
     source = "../.."
 }
+<<<<<<< HEAD
 dependencies {
     // ✅ Add the desugaring library dependency here
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
+=======
+>>>>>>> revolve
