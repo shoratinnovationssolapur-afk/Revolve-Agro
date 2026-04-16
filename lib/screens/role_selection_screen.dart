@@ -13,9 +13,12 @@ class RoleSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Scaffold(
-      body: AppShell(
-        child: SafeArea(
+    return AppShell(
+      backgroundImage: 'https://images.unsplash.com/photo-1495107336281-118e6e58e493?q=80&w=2070&auto=format&fit=crop',
+      overlayOpacity: 0.5,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
@@ -28,7 +31,8 @@ class RoleSelectionScreen extends StatelessWidget {
                     children: [
                       IconButton.filledTonal(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_rounded),
+                        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                        style: IconButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2)),
                       ),
                       const SizedBox(height: 10),
                       const Align(
@@ -41,6 +45,7 @@ class RoleSelectionScreen extends StatelessWidget {
                       AppSectionHeading(
                         title: l10n.text('choose_experience_title'),
                         subtitle: l10n.text('choose_experience_subtitle'),
+                        color: Colors.white,
                       ),
 
                       const SizedBox(height: 26),
@@ -50,7 +55,7 @@ class RoleSelectionScreen extends StatelessWidget {
                         title: l10n.text('user_login'),
                         subtitle: l10n.text('user_login_subtitle'),
                         icon: Icons.person_outline_rounded,
-                        accent: const Color(0xFF2F6A3E),
+                        accent: const Color(0xFF7BB960),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -62,9 +67,9 @@ class RoleSelectionScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 18),
 
-                      // Vendor Login Card (Replaces Admin/SuperAdmin)
+                      // Vendor Login Card
                       _RoleCard(
-                        title: "Vendor Login", // You can add this to app_localizations later
+                        title: "Vendor Login",
                         subtitle: "Manage your shop and fulfill farmer orders",
                         icon: Icons.storefront_outlined,
                         accent: const Color(0xFFD9952E),
@@ -80,24 +85,22 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       const SizedBox(height: 30),
 
-                      // 🔥 NEW: VENDOR SIGNUP LINK
                       Center(
                         child: Column(
                           children: [
                             Text(
                               "Want to partner with Revolve Agro?",
-                              style: TextStyle(color: Colors.grey.shade700),
+                              style: TextStyle(color: Colors.white.withOpacity(0.8)),
                             ),
                             TextButton(
                               onPressed: () {
-                                // TODO: Navigate to your Vendor Registration Form
                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const VendorListingPage()));
                               },
                               child: const Text(
                                 "Register as a Vendor",
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2F6A3E),
+                                  color: Color(0xFF7BB960),
                                   decoration: TextDecoration.underline,
                                 ),
                               ),
@@ -110,16 +113,17 @@ class RoleSelectionScreen extends StatelessWidget {
 
                       // Multilingual Support Info
                       AppGlassCard(
+                        color: Colors.white.withOpacity(0.1),
                         child: Padding(
                           padding: const EdgeInsets.all(18),
                           child: Row(
                             children: [
-                              const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+                              const Icon(Icons.language_rounded, color: Colors.white),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   l10n.text('multilingual_support'),
-                                  style: const TextStyle(height: 1.45),
+                                  style: const TextStyle(height: 1.45, color: Colors.white),
                                 ),
                               ),
                             ],
@@ -138,7 +142,6 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 }
 
-// _RoleCard remains the same as your original snippet
 class _RoleCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -164,6 +167,7 @@ class _RoleCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(30),
           child: AppGlassCard(
+            color: Colors.white.withOpacity(0.15),
             padding: const EdgeInsets.all(22),
             child: Row(
               children: [
@@ -171,7 +175,7 @@ class _RoleCard extends StatelessWidget {
                   height: 64,
                   width: 64,
                   decoration: BoxDecoration(
-                    color: accent.withOpacity(0.12),
+                    color: accent.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(icon, color: accent, size: 32),
@@ -186,14 +190,14 @@ class _RoleCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF183020),
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: Colors.grey.shade700,
+                          color: Colors.white.withOpacity(0.7),
                           height: 1.45,
                         ),
                       ),
@@ -201,7 +205,7 @@ class _RoleCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.arrow_forward_rounded, color: Color(0xFF183020)),
+                const Icon(Icons.arrow_forward_rounded, color: Colors.white),
               ],
             ),
           ),

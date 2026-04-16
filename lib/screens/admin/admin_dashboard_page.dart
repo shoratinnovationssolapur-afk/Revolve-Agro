@@ -7,6 +7,7 @@ import '../welcome_screen.dart';
 import 'admin_gallery_screen.dart'; // ✅ Added
 import '../profile_page.dart'; // ✅ Added
 import 'admin_custom_push_page.dart';
+import 'admin_inquiries_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -47,6 +48,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       icon: Icons.photo_library_rounded,
       color: Color(0xFF1E5631),
       destination: AdminGalleryScreen(),
+    ),
+    _DashboardItem(
+      label: 'Customer Inquiries',
+      subtitle: 'Reply, mark read, or delete',
+      icon: Icons.forum_outlined,
+      color: Color(0xFF305C89),
+      destination: AdminInquiriesPage(),
     ),
     _DashboardItem(
       label: 'Profile Settings',

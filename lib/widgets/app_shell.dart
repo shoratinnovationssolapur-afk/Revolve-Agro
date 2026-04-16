@@ -1,34 +1,70 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
 class AppShell extends StatelessWidget {
   final Widget child;
   final List<Color>? colors;
+  final String? backgroundImage;
+  final double? overlayOpacity;
 
   const AppShell({
     super.key,
     required this.child,
     this.colors,
+    this.backgroundImage,
+    this.overlayOpacity,
   });
 
   @override
   Widget build(BuildContext context) {
-    final palette =
-        colors ??
-        const [
-          Color(0xFFE7F1D9),
-          Color(0xFFF7F3E8),
-          Color(0xFFFFFBF4),
-        ];
+    final palette = colors ?? const [
+      Color(0xFFE7F1D9),
+      Color(0xFFF7F3E8),
+      Color(0xFFFFFBF4),
+    ];
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: palette,
-        ),
+    return Scaffold(
+      body: Stack(
+        children: [
+          if (backgroundImage != null)
+            Positioned.fill(
+              child: Image.network(
+                backgroundImage!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: palette,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: palette,
+                  ),
+                ),
+              ),
+            ),
+
+          if (backgroundImage != null)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(overlayOpacity ?? 0.2),
+              ),
+            ),
+
+          child,
+        ],
       ),
-      child: child,
     );
   }
 }
@@ -36,34 +72,50 @@ class AppShell extends StatelessWidget {
 class AppGlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? margin; // Added margin
   final BorderRadiusGeometry borderRadius;
+  final Color? color;
+  final double blur;
 
   const AppGlassCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(22),
+    this.margin, // Added margin
     this.borderRadius = const BorderRadius.all(Radius.circular(30)),
+    this.color,
+    this.blur = 10.0,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+      margin: margin, // Apply margin here
+      child: ClipRRect(
         borderRadius: borderRadius,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 26,
-            offset: const Offset(0, 14),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: color ?? Colors.white.withOpacity(0.7),
+              borderRadius: borderRadius,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: child,
           ),
-        ],
-        border: Border.all(
-          color: Colors.white.withOpacity(0.45),
         ),
       ),
-      child: child,
     );
   }
 }
@@ -71,11 +123,13 @@ class AppGlassCard extends StatelessWidget {
 class AppSectionHeading extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final Color? color;
 
   const AppSectionHeading({
     super.key,
     required this.title,
     this.subtitle,
+    this.color,
   });
 
   @override
@@ -85,10 +139,11 @@ class AppSectionHeading extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF183020),
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: color ?? const Color(0xFF183020),
           ),
         ),
         if (subtitle != null) ...[
@@ -96,7 +151,8 @@ class AppSectionHeading extends StatelessWidget {
           Text(
             subtitle!,
             style: TextStyle(
-              color: Colors.grey.shade700,
+              color: (color ?? Colors.grey.shade700).withOpacity(0.8),
+              fontSize: 15,
               height: 1.45,
             ),
           ),
@@ -111,6 +167,7 @@ class AppPill extends StatelessWidget {
   final IconData? icon;
   final Color backgroundColor;
   final Color foregroundColor;
+  final bool isSelected;
 
   const AppPill({
     super.key,
@@ -118,31 +175,37 @@ class AppPill extends StatelessWidget {
     this.icon,
     this.backgroundColor = const Color(0xFFF4E5C9),
     this.foregroundColor = const Color(0xFF8A5D1A),
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(30),
+        color: isSelected ? const Color(0xFF183020) : backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isSelected ? [
+          BoxShadow(
+            color: const Color(0xFF183020).withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ] : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 16, color: foregroundColor),
+            Icon(icon, size: 18, color: isSelected ? Colors.white : foregroundColor),
             const SizedBox(width: 8),
           ],
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: foregroundColor,
-                fontWeight: FontWeight.w700,
-              ),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : foregroundColor,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
             ),
           ),
         ],
@@ -172,24 +235,23 @@ class AppPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors:
-              gradient ??
-              const [
-                Color(0xFF183020),
-                Color(0xFF30523B),
-              ],
+          colors: gradient ?? const [
+            Color(0xFF183020),
+            Color(0xFF30523B),
+          ],
         ),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: const Color(0x33183020),
-            blurRadius: 28,
-            offset: const Offset(0, 16),
+            color: const Color(0x44183020),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
           ),
         ],
       ),
@@ -199,49 +261,46 @@ class AppPageHeader extends StatelessWidget {
           Wrap(
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 10,
-            runSpacing: 10,
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              ?leading,
+              if (leading != null) leading!,
               if (actions.isNotEmpty)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 260),
-                  child: Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: actions,
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: actions,
                 ),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 24),
           if (badgeIcon != null) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(24),
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
               ),
-              child: Icon(badgeIcon, color: Colors.white),
+              child: Icon(badgeIcon, color: Colors.white, size: 28),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
           ],
           Text(
             title,
             style: const TextStyle(
-              fontSize: 30,
-              height: 1.05,
-              fontWeight: FontWeight.w800,
+              fontSize: 32,
+              height: 1.1,
+              fontWeight: FontWeight.w900,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             subtitle,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.84),
-              height: 1.45,
+              color: Colors.white.withOpacity(0.85),
+              fontSize: 16,
+              height: 1.5,
             ),
           ),
         ],
@@ -271,25 +330,33 @@ class AppEmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 56, color: const Color(0xFF2F6A3E)),
-              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2F6A3E).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 48, color: const Color(0xFF2F6A3E)),
+              ),
+              const SizedBox(height: 20),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
                   color: Color(0xFF183020),
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
                   subtitle!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey.shade700,
-                    height: 1.45,
+                    fontSize: 15,
+                    height: 1.5,
                   ),
                 ),
               ],

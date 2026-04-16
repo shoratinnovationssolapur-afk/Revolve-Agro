@@ -1,59 +1,63 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
+
+    // Helper: Check if user is signed in
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    function role() {
-      return signedIn() ? (userDoc().data.role ?? 'User') : 'Guest';
-    }
-
+    // Helper: Check if the user has an Admin or SuperAdmin role
+    // We use a safe check that doesn't crash if the user document is missing
     function isAdmin() {
-      return role() == 'Admin' || role() == 'SuperAdmin';
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'User') in ['Admin', 'SuperAdmin']);
     }
 
-    function isSuperAdmin() {
-      return role() == 'SuperAdmin';
-    }
-
+    // Products and Gallery are public for reading, restricted for writing
     match /products/{productId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /gallery/{mediaId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
+    // Cart is private to the user
     match /cart/{cartId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
+    // Orders can be created by users, read by owners/admins, updated by admins
     match /orders/{orderId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if signedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow update: if isAdmin();
       allow delete: if false;
     }
 
+    // INQUIRIES: Fix for the errors shown in screenshots
+    match /inquiries/{inquiryId} {
+      // Any logged-in farmer can submit a message
+      allow create: if isSignedIn();
+      // Only Admins and SuperAdmins can view the history or manage them
+      allow read, update, delete: if isAdmin();
+    }
+
+    // User profiles
     match /users/{userId} {
-      allow create: if signedIn() && request.auth.uid == userId;
-      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
-      allow update: if signedIn() && request.auth.uid == userId;
-      allow delete: if isSuperAdmin() &&
-        request.auth.uid != userId &&
-        get(/databases/$(database)/documents/users/$(userId)).data.role != 'SuperAdmin';
+      allow create, update: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Only SuperAdmin can delete other users
+      allow delete: if isAdmin() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'User') == 'SuperAdmin';
     }
 
     match /users/{userId}/fcmTokens/{tokenId} {
-      allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
 
     match /vendors/{vendorId} {

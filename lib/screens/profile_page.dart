@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'dart:ui';
 
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
@@ -10,6 +13,7 @@ import 'auth_screen.dart';
 import 'product_list.dart';
 import 'admin/super_admin_dashboard_page.dart';
 import 'welcome_screen.dart';
+import 'user_dashboard.dart';
 
 class ProfilePage extends StatefulWidget {
   final String role;
@@ -21,8 +25,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool _savingNotifications = false;
-  bool _savingLocation = false;
+  bool _fetchingLocation = false;
 
   Future<DocumentSnapshot<Map<String, dynamic>>> _loadProfile() {
     final user = FirebaseAuth.instance.currentUser;
@@ -35,10 +38,51 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _updateSetting(String key, bool value) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       key: value,
     }, SetOptions(merge: true));
+  }
+
+  Future<void> _fetchAndSaveCurrentLocation() async {
+    setState(() => _fetchingLocation = true);
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+      
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        
+        // Fetching precise details like building, street, and locality
+        final house = p.subThoroughfare ?? ''; // Building/House number
+        final street = p.thoroughfare ?? ''; // Street name
+        final landmark = p.subLocality ?? ''; // Locality/Landmark
+        final city = p.locality ?? p.subAdministrativeArea ?? '';
+        final pincode = p.postalCode ?? '';
+        
+        final fullPreciseAddress = '${house.isNotEmpty ? '$house, ' : ''}${street.isNotEmpty ? '$street, ' : ''}$landmark, $city - $pincode'.trim();
+        
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+            'city': city,
+            'landmark': landmark,
+            'fullAddress': fullPreciseAddress,
+            'pincode': pincode,
+          });
+          if (mounted) setState(() {});
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching precise location: $e');
+    } finally {
+      if (mounted) setState(() => _fetchingLocation = false);
+    }
   }
 
   Future<void> _logout() async {
@@ -46,30 +90,60 @@ class _ProfilePageState extends State<ProfilePage> {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.text('logout')),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(l10n.text('logout'), style: const TextStyle(fontWeight: FontWeight.w900)),
         content: Text(l10n.text('logout_confirm')),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.text('cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.text('logout')),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.text('cancel'))),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white), child: Text(l10n.text('logout'))),
         ],
       ),
     );
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => AuthScreen(role: widget.role)), (route) => false);
+    }
+  }
 
-    if (shouldLogout != true) return;
+  void _showEditProfileDialog(Map<String, dynamic> currentData) {
+    final nameCtrl = TextEditingController(text: currentData['name'] ?? '');
+    final phoneCtrl = TextEditingController(text: currentData['phone'] ?? '');
 
-    await FirebaseAuth.instance.signOut();
-    if (!mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => AuthScreen(role: widget.role)),
-          (route) => false,
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Full Name')),
+            const SizedBox(height: 16),
+            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone Number'), keyboardType: TextInputType.phone),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+                  'name': nameCtrl.text.trim(),
+                  'phone': phoneCtrl.text.trim(),
+                });
+                if (mounted) {
+                  Navigator.pop(context);
+                  setState(() {});
+                }
+              }
+            },
+            child: const Text('Save Changes'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -80,351 +154,126 @@ class _ProfilePageState extends State<ProfilePage> {
     } else if (widget.role == 'Admin') {
       destination = const AdminDashboardPage();
     } else {
-      destination = RevolveAgroProducts();
+      destination = const UserDashboard();
     }
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => destination),
-          (route) => false,
-    );
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => destination), (route) => false);
   }
 
-  void _goToWelcome() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WelcomeScreen(preferredRole: widget.role),
-      ),
-          (route) => false,
-    );
+  String _resolveAddress(Map<String, dynamic> data) {
+    final full = data['fullAddress']?.toString() ?? '';
+    if (full.isNotEmpty) return full;
+    
+    final city = data['city']?.toString() ?? '';
+    final landmark = data['landmark']?.toString() ?? '';
+    if (city.isNotEmpty && landmark.isNotEmpty) return '$landmark, $city';
+    if (city.isNotEmpty) return city;
+    return 'No address saved';
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final isAdmin = widget.role == 'Admin';
-    final isSuperAdmin = widget.role == 'SuperAdmin';
-    final isAnyAdmin = isAdmin || isSuperAdmin;
-
-    final accent = isSuperAdmin
-        ? const Color(0xFF4B2A63)
-        : (isAdmin ? const Color(0xFF8C5B1C) : const Color(0xFF2F6A3E));
     final l10n = context.l10n;
+    final isAnyAdmin = widget.role == 'Admin' || widget.role == 'SuperAdmin';
 
-    if (currentUser == null) {
-      return Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                accent.withOpacity(0.14),
-                const Color(0xFFF7F3E8),
-                Colors.white,
-              ],
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      IconButton.filledTonal(
-                        onPressed: _goToWelcome,
-                        icon: const Icon(Icons.arrow_back_rounded),
-                      ),
-                      const Spacer(),
-                      const LanguageSelector(),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Expanded(
-                    child: Center(
-                      child: AppEmptyState(
-                        icon: Icons.lock_outline_rounded,
-                        title: l10n.text('login_required'),
-                        subtitle: l10n.text('user_login_subtitle'),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AuthScreen(role: widget.role),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accent,
-                        foregroundColor: Colors.white,
-                      ),
-                      icon: const Icon(Icons.login_rounded),
-                      label: Text(l10n.text('login')),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _goToHome,
-                      icon: const Icon(Icons.storefront_outlined),
-                      label: Text(l10n.text('browse_products_directly')),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              accent.withOpacity(0.14),
-              const Color(0xFFF7F3E8),
-              Colors.white,
-            ],
-          ),
-        ),
-        child: SafeArea(
+    return AppShell(
+      backgroundImage: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=2070&auto=format&fit=crop',
+      overlayOpacity: 0.5,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
           child: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             future: _loadProfile(),
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator(color: Color(0xFF7BB960)));
               }
 
               final data = snapshot.data?.data() ?? <String, dynamic>{};
-              final name = data['name']?.toString().trim();
-              final email = data['email']?.toString().trim();
-              final phone = data['phone']?.toString().trim();
+              final name = data['name']?.toString() ?? 'Farmer';
+              final email = data['email']?.toString() ?? 'no-email@agro.com';
               final notificationsEnabled = data['notificationsEnabled'] as bool? ?? true;
               final locationEnabled = data['locationEnabled'] as bool? ?? !isAnyAdmin;
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton.filledTonal(
-                          onPressed: _goToHome,
-                          icon: const Icon(Icons.arrow_back_rounded),
+                        IconButton.filledTonal(onPressed: _goToHome, icon: const Icon(Icons.arrow_back_rounded, color: Colors.white), style: IconButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.1))),
+                        Row(
+                          children: [
+                            IconButton.filledTonal(onPressed: () => _showEditProfileDialog(data), icon: const Icon(Icons.edit_rounded, color: Colors.white), style: IconButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.1))),
+                            const SizedBox(width: 8),
+                            const LanguageSelector(),
+                          ],
                         ),
-                        const Spacer(),
-                        const LanguageSelector(),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [accent, accent.withOpacity(0.72)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 30),
+                    AppGlassCard(
+                      color: Colors.white.withOpacity(0.1),
+                      child: Row(
                         children: [
                           CircleAvatar(
-                            radius: 34,
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            child: Icon(
-                              isSuperAdmin
-                                  ? Icons.verified_user_rounded
-                                  : (isAdmin ? Icons.admin_panel_settings_rounded : Icons.person_rounded),
-                              size: 34,
-                              color: Colors.white,
-                            ),
+                            radius: 36,
+                            backgroundColor: const Color(0xFF7BB960),
+                            child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'F', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white)),
                           ),
-                          const SizedBox(height: 18),
-                          Text(
-                            name?.isNotEmpty == true ? name! : l10n.text('profile'),
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            email?.isNotEmpty == true ? email! : l10n.text('no_email_found'),
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 15,
-                            ),
-                          ),
-                          if (phone?.isNotEmpty == true) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              phone!,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 18),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.16),
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                            child: Text(
-                              isSuperAdmin
-                                  ? "Super Admin Workspace"
-                                  : (isAdmin ? l10n.text('admin_workspace') : l10n.text('farmer_workspace')),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
+                                Text(email, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 22),
-                    Text(
-                      l10n.text('account_overview'),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF183020),
-                      ),
-                    ),
+                    const SizedBox(height: 30),
+                    _sectionHeading(l10n.text('account_overview')),
                     const SizedBox(height: 14),
-                    _InfoCard(
-                      icon: Icons.badge_outlined,
-                      title: l10n.text('account_role'),
-                      value: widget.role,
-                    ),
+                    _infoTile(Icons.badge_rounded, l10n.text('account_role'), widget.role),
                     const SizedBox(height: 12),
-                    _InfoCard(
-                      icon: Icons.phone_outlined,
-                      title: l10n.text('phone_number'),
-                      value: phone?.isNotEmpty == true ? phone! : l10n.text('not_added_yet'),
-                    ),
-                    const SizedBox(height: 22),
-                    Text(
-                      l10n.text('settings'),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF183020),
-                      ),
-                    ),
+                    _addressTile(l10n, data),
+                    const SizedBox(height: 30),
+                    _sectionHeading(l10n.text('settings')),
                     const SizedBox(height: 14),
-                    _SettingTile(
-                      icon: Icons.notifications_active_outlined,
-                      title: l10n.text('notifications'),
-                      subtitle: isAnyAdmin
-                          ? l10n.text('admin_notifications_subtitle')
-                          : l10n.text('user_notifications_subtitle'),
-                      trailing: _savingNotifications
-                          ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : Switch(
+                    _settingTile(
+                      Icons.notifications_rounded,
+                      l10n.text('notifications'),
+                      Switch(
                         value: notificationsEnabled,
-                        onChanged: (value) async {
-                          setState(() => _savingNotifications = true);
-                          try {
-                            await _updateSetting('notificationsEnabled', value);
-                          } finally {
-                            if (mounted) {
-                              setState(() => _savingNotifications = false);
-                            }
-                          }
-                        },
-                        activeThumbColor: accent,
+                        onChanged: (val) => _updateSetting('notificationsEnabled', val).then((_) => setState(() {})),
+                        activeColor: const Color(0xFF7BB960),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _SettingTile(
-                      icon: isAnyAdmin ? Icons.campaign_outlined : Icons.my_location_rounded,
-                      title: isAnyAdmin ? l10n.text('order_alerts') : l10n.text('location_access'),
-                      subtitle: isAnyAdmin
-                          ? (isSuperAdmin
-                          ? "Receive notifications for all platform activity"
-                          : l10n.text('order_alerts_subtitle'))
-                          : l10n.text('location_access_subtitle'),
-                      trailing: _savingLocation
-                          ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : Switch(
+                    _settingTile(
+                      Icons.location_on_rounded,
+                      l10n.text('location_access'),
+                      Switch(
                         value: locationEnabled,
-                        onChanged: (value) async {
-                          setState(() => _savingLocation = true);
-                          try {
-                            await _updateSetting('locationEnabled', value);
-                          } finally {
-                            if (mounted) {
-                              setState(() => _savingLocation = false);
-                            }
-                          }
-                        },
-                        activeThumbColor: accent,
+                        onChanged: (val) => _updateSetting('locationEnabled', val).then((_) => setState(() {})),
+                        activeColor: const Color(0xFF7BB960),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    _SettingTile(
-                      icon: Icons.translate_rounded,
-                      title: l10n.text('app_language'),
-                      subtitle: l10n.text('app_language_subtitle'),
-                      trailing: const LanguageSelector(),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _goToHome,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accent,
-                        foregroundColor: Colors.white,
-                      ),
-                      icon: Icon(isSuperAdmin ? Icons.admin_panel_settings_outlined : Icons.space_dashboard_outlined),
-                      label: Text(
-                        isSuperAdmin
-                            ? "Go to Super Admin Dashboard"
-                            : (isAdmin ? l10n.text('go_to_admin_dashboard') : l10n.text('go_to_marketplace')),
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout_rounded),
+                        label: Text(l10n.text('logout'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white12), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _goToWelcome,
-                      icon: const Icon(Icons.home_outlined),
-                      label: Text(l10n.text('back_to_welcome')),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _logout,
-                      icon: const Icon(Icons.logout_rounded),
-                      label: Text(l10n.text('logout')),
-                    ),
+                    const SizedBox(height: 100),
                   ],
                 ),
               );
@@ -434,60 +283,53 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-}
 
-class _InfoCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _InfoCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-      ),
+  Widget _addressTile(dynamic l10n, Map<String, dynamic> data) {
+    return AppGlassCard(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white.withOpacity(0.08),
       child: Row(
         children: [
-          Container(
-            height: 48,
-            width: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF1E1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: const Color(0xFF2F6A3E)),
-          ),
+          Icon(Icons.location_on_rounded, color: const Color(0xFF7BB960)),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF183020),
-                  ),
-                ),
+                Text('Primary Address', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
+                Text(_resolveAddress(data), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: _fetchingLocation ? null : _fetchAndSaveCurrentLocation,
+            icon: _fetchingLocation 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.my_location_rounded, color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeading(String title) {
+    return Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white));
+  }
+
+  Widget _infoTile(IconData icon, String title, String value) {
+    return AppGlassCard(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white.withOpacity(0.08),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF7BB960)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
+                Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15), overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -495,66 +337,17 @@ class _InfoCard extends StatelessWidget {
       ),
     );
   }
-}
 
-class _SettingTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget trailing;
-
-  const _SettingTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-      ),
+  Widget _settingTile(IconData icon, String title, Widget trailing) {
+    return AppGlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.white.withOpacity(0.08),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 48,
-            width: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5EEDC),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: const Color(0xFF8C5B1C)),
-          ),
+          Icon(icon, color: const Color(0xFF7BB960)),
           const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF183020),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
+          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          const Spacer(),
           trailing,
         ],
       ),
