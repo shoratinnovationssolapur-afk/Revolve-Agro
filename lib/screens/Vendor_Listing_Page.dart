@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class VendorListingPage extends StatefulWidget {
@@ -27,10 +28,20 @@ class _VendorListingPageState extends State<VendorListingPage> {
   Future<void> _registerVendor() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // 🔥 Get the current user
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You must be logged in to register!")),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       await FirebaseFirestore.instance.collection('vendors').add({
+        'userId': user.uid, // 🔥 CRITICAL: Must match request.auth.uid in Rules
         'shopName': _shopNameController.text.trim(),
         'email': _emailController.text.trim(),
         'businessType': _selectedBusinessType,
@@ -40,19 +51,20 @@ class _VendorListingPageState extends State<VendorListingPage> {
         'gstNumber': _gstController.text.trim(),
         'state': _selectedState,
         'createdAt': FieldValue.serverTimestamp(),
-        'status': 'pending', // For admin approval
+        'status': 'pending',
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Registration Submitted Successfully!")),
         );
-        Navigator.pop(context); // Go back after success
+        Navigator.pop(context);
       }
     } catch (e) {
+      debugPrint("Firestore Error: $e"); // Check console for specific rule violation
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(content: Text("Permission Denied: Ensure you are logged in.")),
         );
       }
     } finally {
