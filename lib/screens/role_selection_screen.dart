@@ -1,212 +1,212 @@
-import 'package:flutter/material.dart';
+// // import 'package:flutter/material.dart';
 
-import '../app_localizations.dart';
-import '../widgets/app_shell.dart';
-import '../widgets/language_selector.dart';
-import 'auth_screen.dart';
-import 'Vendor_Listing_Page.dart';
+// import '../app_localizations.dart';
+// import '../widgets/app_shell.dart';
+// import '../widgets/language_selector.dart';
+// import 'auth_screen.dart';
+// import 'Vendor_Listing_Page.dart';
 
-class RoleSelectionScreen extends StatelessWidget {
-  const RoleSelectionScreen({super.key});
+// class RoleSelectionScreen extends StatelessWidget {
+//   const RoleSelectionScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
+//   @override
+//   Widget build(BuildContext context) {
+//     final l10n = context.l10n;
 
-    return Scaffold(
-      body: AppShell(
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 38),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      IconButton.filledTonal(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_rounded),
-                      ),
-                      const SizedBox(height: 10),
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: LanguageSelector(),
-                      ),
+//     return Scaffold(
+//       body: AppShell(
+//         child: SafeArea(
+//           child: LayoutBuilder(
+//             builder: (context, constraints) {
+//               return SingleChildScrollView(
+//                 physics: const BouncingScrollPhysics(),
+//                 padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+//                 child: ConstrainedBox(
+//                   constraints: BoxConstraints(minHeight: constraints.maxHeight - 38),
+//                   child: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       IconButton.filledTonal(
+//                         onPressed: () => Navigator.pop(context),
+//                         icon: const Icon(Icons.arrow_back_rounded),
+//                       ),
+//                       const SizedBox(height: 10),
+//                       const Align(
+//                         alignment: Alignment.centerRight,
+//                         child: LanguageSelector(),
+//                       ),
 
-                      const SizedBox(height: 18),
+//                       const SizedBox(height: 18),
 
-                      AppSectionHeading(
-                        title: l10n.text('choose_experience_title'),
-                        subtitle: l10n.text('choose_experience_subtitle'),
-                      ),
+//                       AppSectionHeading(
+//                         title: l10n.text('choose_experience_title'),
+//                         subtitle: l10n.text('choose_experience_subtitle'),
+//                       ),
 
-                      const SizedBox(height: 26),
+//                       const SizedBox(height: 26),
 
-                      // User/Farmer Login Card
-                      _RoleCard(
-                        title: l10n.text('user_login'),
-                        subtitle: l10n.text('user_login_subtitle'),
-                        icon: Icons.person_outline_rounded,
-                        accent: const Color(0xFF2F6A3E),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "User"),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 18),
+//                       // User/Farmer Login Card
+//                       _RoleCard(
+//                         title: l10n.text('user_login'),
+//                         subtitle: l10n.text('user_login_subtitle'),
+//                         icon: Icons.person_outline_rounded,
+//                         accent: const Color(0xFF2F6A3E),
+//                         onTap: () {
+//                           Navigator.push(
+//                             context,
+//                             MaterialPageRoute(
+//                               builder: (context) => const AuthScreen(role: "User"),
+//                             ),
+//                           );
+//                         },
+//                       ),
+//                       const SizedBox(height: 18),
 
-                      // Vendor Login Card (Replaces Admin/SuperAdmin)
-                      _RoleCard(
-                        title: "Vendor Login", // You can add this to app_localizations later
-                        subtitle: "Manage your shop and fulfill farmer orders",
-                        icon: Icons.storefront_outlined,
-                        accent: const Color(0xFFD9952E),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AuthScreen(role: "Vendor"),
-                            ),
-                          );
-                        },
-                      ),
+//                       // Vendor Login Card (Replaces Admin/SuperAdmin)
+//                       _RoleCard(
+//                         title: "Vendor Login", // You can add this to app_localizations later
+//                         subtitle: "Manage your shop and fulfill farmer orders",
+//                         icon: Icons.storefront_outlined,
+//                         accent: const Color(0xFFD9952E),
+//                         onTap: () {
+//                           Navigator.push(
+//                             context,
+//                             MaterialPageRoute(
+//                               builder: (context) => const AuthScreen(role: "Vendor"),
+//                             ),
+//                           );
+//                         },
+//                       ),
 
-                      const SizedBox(height: 30),
+//                       const SizedBox(height: 30),
 
-                      // 🔥 NEW: VENDOR SIGNUP LINK
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              "Want to partner with Revolve Agro?",
-                              style: TextStyle(color: Colors.grey.shade700),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                // TODO: Navigate to your Vendor Registration Form
-                                 Navigator.push(context, MaterialPageRoute(builder: (_) => const VendorListingPage()));
-                              },
-                              child: const Text(
-                                "Register as a Vendor",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2F6A3E),
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+//                       // 🔥 NEW: VENDOR SIGNUP LINK
+//                       Center(
+//                         child: Column(
+//                           children: [
+//                             Text(
+//                               "Want to partner with Revolve Agro?",
+//                               style: TextStyle(color: Colors.grey.shade700),
+//                             ),
+//                             TextButton(
+//                               onPressed: () {
+//                                 // TODO: Navigate to your Vendor Registration Form
+//                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const VendorListingPage()));
+//                               },
+//                               child: const Text(
+//                                 "Register as a Vendor",
+//                                 style: TextStyle(
+//                                   fontWeight: FontWeight.bold,
+//                                   color: Color(0xFF2F6A3E),
+//                                   decoration: TextDecoration.underline,
+//                                 ),
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
 
-                      const SizedBox(height: 20),
+//                       const SizedBox(height: 20),
 
-                      // Multilingual Support Info
-                      AppGlassCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(18),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  l10n.text('multilingual_support'),
-                                  style: const TextStyle(height: 1.45),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
+//                       // Multilingual Support Info
+//                       AppGlassCard(
+//                         child: Padding(
+//                           padding: const EdgeInsets.all(18),
+//                           child: Row(
+//                             children: [
+//                               const Icon(Icons.language_rounded, color: Color(0xFF2F6A3E)),
+//                               const SizedBox(width: 12),
+//                               Expanded(
+//                                 child: Text(
+//                                   l10n.text('multilingual_support'),
+//                                   style: const TextStyle(height: 1.45),
+//                                 ),
+//                               ),
+//                             ],
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               );
+//             },
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
-// _RoleCard remains the same as your original snippet
-class _RoleCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accent;
-  final VoidCallback onTap;
+// // _RoleCard remains the same as your original snippet
+// class _RoleCard extends StatelessWidget {
+//   final String title;
+//   final String subtitle;
+//   final IconData icon;
+//   final Color accent;
+//   final VoidCallback onTap;
 
-  const _RoleCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.accent,
-    required this.onTap,
-  });
+//   const _RoleCard({
+//     required this.title,
+//     required this.subtitle,
+//     required this.icon,
+//     required this.accent,
+//     required this.onTap,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(30),
-          child: AppGlassCard(
-            padding: const EdgeInsets.all(22),
-            child: Row(
-              children: [
-                Container(
-                  height: 64,
-                  width: 64,
-                  decoration: BoxDecoration(
-                    color: accent.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(icon, color: accent, size: 32),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF183020),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          height: 1.45,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Icon(Icons.arrow_forward_rounded, color: Color(0xFF183020)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Padding(
+//       padding: const EdgeInsets.only(bottom: 12),
+//       child: Material(
+//         color: Colors.transparent,
+//         child: InkWell(
+//           onTap: onTap,
+//           borderRadius: BorderRadius.circular(30),
+//           child: AppGlassCard(
+//             padding: const EdgeInsets.all(22),
+//             child: Row(
+//               children: [
+//                 Container(
+//                   height: 64,
+//                   width: 64,
+//                   decoration: BoxDecoration(
+//                     color: accent.withOpacity(0.12),
+//                     borderRadius: BorderRadius.circular(20),
+//                   ),
+//                   child: Icon(icon, color: accent, size: 32),
+//                 ),
+//                 const SizedBox(width: 18),
+//                 Expanded(
+//                   child: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       Text(
+//                         title,
+//                         style: const TextStyle(
+//                           fontSize: 20,
+//                           fontWeight: FontWeight.w800,
+//                           color: Color(0xFF183020),
+//                         ),
+//                       ),
+//                       const SizedBox(height: 8),
+//                       Text(
+//                         subtitle,
+//                         style: TextStyle(
+//                           color: Colors.grey.shade700,
+//                           height: 1.45,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//                 const SizedBox(width: 12),
+//                 const Icon(Icons.arrow_forward_rounded, color: Color(0xFF183020)),
+//               ],
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }

@@ -1,1012 +1,240 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import 'dart:ui';
 
 import '../app_localizations.dart';
+import '../services/inquiry_service.dart';
 import '../widgets/app_shell.dart';
-import '../widgets/gallery_media_card.dart';
-import '../utils/helpline.dart';
-import 'full_screen_viewer.dart';
-import 'order_history_page.dart';
-import 'payment_page.dart';
-import 'product_list.dart';
-import 'profile_page.dart';
-import 'auth_screen.dart';
-import 'user_gallery_screen.dart';
 
-class UserDashboard extends StatefulWidget {
-  const UserDashboard({super.key});
+class QueryFormPage extends StatefulWidget {
+  const QueryFormPage({super.key});
 
   @override
-  State<UserDashboard> createState() => _UserDashboardState();
+  State<QueryFormPage> createState() => _QueryFormPageState();
 }
 
-class _UserDashboardState extends State<UserDashboard> {
-  static const List<_QuickModule> _quickModules = [
-    _QuickModule(
-      title: 'Shop Inputs',
-      subtitle: 'Seeds, nutrition, and crop care',
-      icon: Icons.storefront_outlined,
-      color: Color(0xFF2F6A3E),
-      destinationIndex: 1,
-    ),
-    _QuickModule(
-      title: 'My Cart',
-      subtitle: 'Checkout your current order',
-      icon: Icons.shopping_cart_checkout_outlined,
-      color: Color(0xFFD9952E),
-      destinationIndex: 2,
-    ),
-    _QuickModule(
-      title: 'Order History',
-      subtitle: 'Track your order status',
-      icon: Icons.history_outlined,
-      color: Color(0xFF8B5CF6),
-      destinationIndex: 4,
-    ),
-    _QuickModule(
-      title: 'Profile',
-      subtitle: 'Language and account settings',
-      icon: Icons.person_outline_rounded,
-      color: Color(0xFF305C89),
-      destinationIndex: 3,
-    ),
-  ];
+class _QueryFormPageState extends State<QueryFormPage>
+    with TickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _subject = TextEditingController();
+  final _message = TextEditingController();
 
-  static const List<_InsightCardData> _insights = [
-    _InsightCardData(
-      title: 'Field-ready guidance',
-      subtitle: 'See solutions by crop health, soil nutrition, and stage of growth.',
-      icon: Icons.eco_outlined,
-      tint: Color(0xFFE7F2DE),
-    ),
-    _InsightCardData(
-      title: 'Faster buying decisions',
-      subtitle: 'Compare trusted farm products in one place and move to checkout quickly.',
-      icon: Icons.bolt_outlined,
-      tint: Color(0xFFF8E8C8),
-    ),
-    _InsightCardData(
-      title: 'Farmer-first experience',
-      subtitle: 'Simple sections, local language support, and practical navigation.',
-      icon: Icons.forum_outlined,
-      tint: Color(0xFFE3EEF8),
-    ),
-  ];
+  late final AnimationController _animController;
 
-  int _currentIndex = 0;
-  String userName = '';
-  String location = '';
+  bool _submitting = false;
+  String _phone = '';
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _getCurrentLocation();
+    _animController =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
+    _prefill();
+    _animController.forward();
   }
 
-  Future<void> _getCurrentLocation() async {
-    try {
-      // Check if location permission is enabled
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          // Permissions are denied - set fallback location
-          _setFallbackLocation();
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        // Permissions are denied forever - set fallback location
-        _setFallbackLocation();
-        return;
-      }
-
-      // Get current position
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      // Get city name from coordinates using reverse geocoding
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        final placemark = placemarks.first;
-        final newLocation = placemark.locality ??
-                            placemark.administrativeArea ??
-                            'Current Location';
-
-        if (mounted) {
-          setState(() {
-            location = newLocation;
-          });
-        }
-      } else {
-        _setFallbackLocation();
-      }
-    } catch (e) {
-      debugPrint('Error getting current location: $e');
-      _setFallbackLocation();
-    }
-  }
-
-  void _setFallbackLocation() {
+  Future<void> _prefill() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      FirebaseFirestore.instance.collection('users').doc(user.uid).get().then((doc) {
-        if (mounted && location.isEmpty) {
-          setState(() {
-            location = _resolveLocationLabel(doc.data());
-          });
-        }
-      });
-    }
-  }
-
-  Future<void> _loadUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return;
-    }
-
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    if (!mounted) {
-      return;
-    }
+    if (user == null) return;
 
     setState(() {
-      userName = doc.data()?['name']?.toString() ?? '';
-      // Don't set location here - let GPS override it
+      _name.text = user.displayName ?? '';
+      _email.text = user.email ?? '';
     });
-  }
 
-  String _resolveLocationLabel(Map<String, dynamic>? data) {
-    if (data == null) {
-      return 'Current Location';
-    }
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
-    final city = data['city']?.toString().trim() ?? '';
-    final landmark = data['landmark']?.toString().trim() ?? '';
-    final fullAddress = data['fullAddress']?.toString().trim() ?? '';
-
-    if (city.isNotEmpty) {
-      return city;
-    }
-
-    if (landmark.isNotEmpty) {
-      return landmark.split(',').first.trim();
-    }
-
-    if (fullAddress.isNotEmpty) {
-      return fullAddress.split(',').first.trim();
-    }
-
-    return 'Current Location';
-  }
-
-  void goToTab(int index) {
-    setState(() => _currentIndex = index);
-  }
-
-  List<Map<String, dynamic>> _mapCartDocsToItems(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
-  ) {
-    return docs.map((doc) {
-      final data = doc.data();
-      int toInt(dynamic value) {
-        if (value is num) return value.toInt();
-        if (value is String) return int.tryParse(value) ?? 0;
-        return 0;
+      if (mounted && doc.exists) {
+        setState(() {
+          _name.text = doc.data()?['name'] ?? _name.text;
+          _email.text = doc.data()?['email'] ?? _email.text;
+          _phone = doc.data()?['phone'] ?? '';
+        });
       }
-
-      return {
-        'productName': data['productName'],
-        'productId': data['productId']?.toString(),
-        'quantity': toInt(data['quantity']),
-        'unitPrice': toInt(data['unitPrice']),
-        'totalPrice': toInt(data['totalPrice']),
-        'imageUrl': data['imageUrl']?.toString(),
-      };
-    }).toList();
+    } catch (_) {}
   }
 
-  int _computeCartTotal(List<Map<String, dynamic>> items) {
-    return items.fold<int>(0, (sum, item) {
-      final v = item['totalPrice'];
-      return sum + (v is int ? v : 0);
-    });
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _subject.dispose();
+    _message.dispose();
+    _animController.dispose();
+    super.dispose();
   }
 
-  void _goToTab(int index) {
-    setState(() => _currentIndex = index);
-  }
+  Future<void> _submit() async {
+    if (_submitting || !(_formKey.currentState?.validate() ?? false)) return;
 
-  Widget buildHome() {
-    final l10n = context.l10n;
-    return AppShell(
-      child: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppPageHeader(
-                      title: l10n.textWithArgs(
-                        'hello_user',
-                        {'name': userName.isEmpty ? l10n.text('farmer') : userName},
-                      ),
-                      subtitle: l10n.text('dashboard_subtitle'),
-                      badgeIcon: Icons.agriculture_outlined,
-                      leading: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.14),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.location_on_outlined, color: Colors.white, size: 18),
-                            const SizedBox(width: 6),
-                            Text(
-                              location.isEmpty ? l10n.text('current_location_fallback') : location,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () async {
-                                await _getCurrentLocation();
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(l10n.text('current_location_fetched')),
-                                      duration: const Duration(seconds: 1),
-                                    ),
-                                  );
-                                }
-                              },
-                              child: const Padding(
-                                padding: EdgeInsets.all(4.0),
-                                child: Icon(Icons.refresh, color: Colors.white, size: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      actions: [
-                        IconButton.filledTonal(
-                          tooltip: 'Helpline (WhatsApp)',
-                          onPressed: () => openHelplineWhatsApp(context),
-                          icon: const Icon(Icons.support_agent_rounded),
-                        ),
-                        IconButton.filledTonal(
-                          onPressed: () => goToTab(3),
-                          icon: const Icon(Icons.person_outline_rounded),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    AppGlassCard(
-                      child: LayoutBuilder(
-                        builder: (context, boxConstraints) {
-                          final isCompact = boxConstraints.maxWidth < 360;
-                          final crossAxisCount =
-                              boxConstraints.maxWidth < 330 ? 1 : 2;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.text('quick_actions'),
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF183020),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: _quickModules.length,
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  childAspectRatio: crossAxisCount == 1
-                                      ? 1.8
-                                      : isCompact
-                                          ? 0.96
-                                          : 1.08,
-                                ),
-                                itemBuilder: (context, index) {
-                                  final module = _quickModules[index];
-                                  return _DashboardModuleCard(
-                                    module: module,
-                                    onTap: () {
-                                      // Special handling for Order History
-                                      if (module.destinationIndex == 4) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => const OrderHistoryPage(),
-                                          ),
-                                        );
-                                      } else {
-                                        goToTab(module.destinationIndex);
-                                      }
-                                    },
-                                  );
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    AppGlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.text('why_app_better'),
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF183020),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          ..._insights.map(
-                            (insight) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _InsightCard(insight: insight),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppSectionHeading(
-                            title: l10n.text('gallery_highlights'),
-                            subtitle: l10n.text('gallery_highlights_subtitle'),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const UserGalleryScreen(),
-                              ),
-                            );
-                          },
-                          child: Text(l10n.text('open_gallery')),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('gallery')
-                  .orderBy('uploadedAt', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: AppEmptyState(
-                      icon: Icons.photo_library_outlined,
-                      title: l10n.text('no_gallery_images'),
-                      subtitle: l10n.textWithArgs(
-                        'database_error',
-                        {'error': '${snapshot.error}'},
-                      ),
-                    ),
-                  );
-                }
-
-                if (!snapshot.hasData) {
-                  return const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: CircularProgressIndicator(color: Color(0xFF2F6A3E)),
-                    ),
-                  );
-                }
-
-                final items = snapshot.data!.docs;
-                if (items.isEmpty) {
-                  return SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: AppEmptyState(
-                      icon: Icons.photo_library_outlined,
-                      title: l10n.text('no_gallery_images'),
-                      subtitle: l10n.text('no_gallery_images_subtitle'),
-                    ),
-                  );
-                }
-
-                return SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
-                  sliver: SliverList.separated(
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 18),
-                    itemBuilder: (context, index) {
-                      final data = items[index];
-                      final payload = data.data();
-                      final url = payload['url']?.toString() ?? '';
-                      final type = payload['type']?.toString() ?? 'image';
-                      final productName = payload['productName']?.toString() ?? '';
-                      final description = payload['description']?.toString() ?? '';
-
-                      return GalleryMediaCard(
-                        url: url,
-                        type: type,
-                        title: productName,
-                        description: description,
-                        onOpen: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => FullScreenViewer(
-                                url: url,
-                                type: type,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCart() {
-    final l10n = context.l10n;
     final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login first")),
+      );
+      return;
+    }
+
+    setState(() => _submitting = true);
+
+try {
+  await InquiryService.submit(
+    name: _name.text.trim(),
+    email: _email.text.trim(),
+    phone: _phone,
+    subject: _subject.text.trim(),
+    message: _message.text.trim(),
+  );
+
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.text('query_sent'))),
+    );
+    Navigator.pop(context);
+  }
+} catch (e) {
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+} finally {
+  if (mounted) setState(() => _submitting = false);
+}
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return AppShell(
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppSectionHeading(
-                title: l10n.text('cart_checkout_title'),
-                subtitle: l10n.text('cart_checkout_subtitle'),
-              ),
-              const SizedBox(height: 18),
-              if (user == null)
-                Expanded(
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: AppEmptyState(
-                          icon: Icons.lock_outline_rounded,
-                          title: l10n.text('login_required'),
-                          subtitle: l10n.text('please_login_view_cart'),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AuthScreen(role: 'User'),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.login_rounded),
-                          label: Text(l10n.text('login')),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            _goToTab(1);
-                          },
-                          icon: const Icon(Icons.storefront_outlined),
-                          label: Text(l10n.text('browse_products_directly')),
-                        ),
-                      ),
-                    ],
+      // ✅ FIXED BACKGROUND HANDLING
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: FadeTransition(
+            opacity: _animController,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton.filledTonal(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_rounded,
+                        color: Colors.white),
+                    style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.1)),
                   ),
-                )
-              else
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('cart')
-                        .where('userId', isEqualTo: user.uid)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFFD9952E),
-                          ),
-                        );
-                      }
+                  const SizedBox(height: 30),
+                  const Text(
+                    'Send Us a Message',
+                    style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white),
+                  ),
+                  Text(
+                    'We are here to help you grow',
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.8), fontSize: 16),
+                  ),
+                  const SizedBox(height: 40),
 
-                      if (snapshot.hasError) {
-                        return AppEmptyState(
-                          icon: Icons.error_outline_rounded,
-                          title: l10n.text('error_fetching_cart').replaceAll(
-                            '{error}',
-                            '${snapshot.error}',
-                          ),
-                          subtitle: l10n.text('cart_checkout_subtitle'),
-                        );
-                      }
-
-                      final docs = snapshot.data?.docs ?? const [];
-                      if (docs.isEmpty) {
-                        return AppEmptyState(
-                          icon: Icons.shopping_cart_outlined,
-                          title: l10n.text('no_items_added_cart'),
-                          subtitle: l10n.text('cart_checkout_subtitle'),
-                        );
-                      }
-
-                      final items = _mapCartDocsToItems(docs);
-                      final total = _computeCartTotal(items);
-
-                      return Column(
+                  AppGlassCard(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
                         children: [
-                          Expanded(
-                            child: ListView.separated(
-                              itemCount: items.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final item = items[index];
-                                final name = item['productName']?.toString() ??
-                                    'Product';
-                                final qty = item['quantity'] as int? ?? 0;
-                                final unit =
-                                    item['unitPrice'] as int? ?? 0;
-                                final line =
-                                    item['totalPrice'] as int? ?? 0;
-                                final imageUrl =
-                                    item['imageUrl']?.toString() ?? '';
+                          _buildField(_name, 'Your Name',
+                              Icons.person_outline),
+                          const SizedBox(height: 20),
+                          _buildField(_email, 'Email Address',
+                              Icons.email_outlined, TextInputType.emailAddress),
+                          const SizedBox(height: 20),
+                          _buildField(_subject, 'Subject',
+                              Icons.topic_outlined),
+                          const SizedBox(height: 20),
+                          _buildField(_message, 'Message',
+                              Icons.message_outlined,
+                              TextInputType.multiline, true),
+                          const SizedBox(height: 30),
 
-                                return Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.92),
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color:
-                                            Colors.black.withOpacity(0.04),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(14),
-                                        child: imageUrl.trim().isEmpty
-                                            ? Container(
-                                                width: 54,
-                                                height: 54,
-                                                color: const Color(0xFFEAF1E1),
-                                                child: const Icon(
-                                                  Icons.spa_outlined,
-                                                  color: Color(0xFF2F6A3E),
-                                                ),
-                                              )
-                                            : Image.network(
-                                                imageUrl,
-                                                width: 54,
-                                                height: 54,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (_, _, _) =>
-                                                    Container(
-                                                  width: 54,
-                                                  height: 54,
-                                                  color:
-                                                      const Color(0xFFEAF1E1),
-                                                  child: const Icon(
-                                                    Icons.spa_outlined,
-                                                    color: Color(0xFF2F6A3E),
-                                                  ),
-                                                ),
-                                              ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              name,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w800,
-                                                color: Color(0xFF183020),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              'Qty: $qty  ·  ₹$unit',
-                                              style: TextStyle(
-                                                color: Colors.grey.shade700,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        '₹$line',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          color: Color(0xFF2F6A3E),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton.icon(
+                              onPressed: _submitting ? null : _submit,
+                              icon: _submitting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.send_rounded),
+                              label: Text(
+                                _submitting ? 'Sending...' : 'Send Message',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7BB960),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 14,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF2EADA),
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  child: Text(
-                                    'Total: ₹$total',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFF183020),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => PaymentPage(
-                                        cartItems: items,
-                                        totalAmount: total,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.shopping_bag_outlined),
-                                label: Text(l10n.text('go_to_cart')),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFD9952E),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
-                      );
-                    },
+                      ),
+                    ),
                   ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildProducts() {
-    return const RevolveAgroProducts();
-  }
-
-  Widget buildProfile() {
-    return const ProfilePage(role: 'User');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final pages = [
-      buildHome(),
-      _buildProducts(),
-      _buildCart(),
-      buildProfile(),
-    ];
-
-    return Scaffold(
-      body: pages[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        height: 76,
-        indicatorColor: const Color(0xFFE2F0D8),
-        backgroundColor: Colors.white,
-        onDestinationSelected: _goToTab,
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home_rounded),
-            label: l10n.text('home'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.storefront_outlined),
-            selectedIcon: const Icon(Icons.storefront_rounded),
-            label: l10n.text('shop'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.shopping_cart_outlined),
-            selectedIcon: const Icon(Icons.shopping_cart_rounded),
-            label: l10n.text('my_cart'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.person_outline_rounded),
-            selectedIcon: const Icon(Icons.person_rounded),
-            label: l10n.text('profile_short'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardModuleCard extends StatelessWidget {
-  final _QuickModule module;
-  final VoidCallback onTap;
-
-  const _DashboardModuleCard({
-    required this.module,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final titleKey = titleKeyForDestination(module.destinationIndex);
-    final subtitleKey = subtitleKeyForDestination(module.destinationIndex);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: module.color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 42,
-                width: 42,
-                decoration: BoxDecoration(
-                  color: module.color.withOpacity(0.14),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(module.icon, color: module.color),
-              ),
-              const Spacer(),
-              Text(
-                l10n.text(titleKey),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF183020),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.text(subtitleKey),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontSize: 12.5,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
+  Widget _buildField(TextEditingController ctrl, String label,
+      IconData icon,
+      [TextInputType type = TextInputType.text, bool multi = false]) {
+    return TextFormField(
+      controller: ctrl,
+      keyboardType: type,
+      maxLines: multi ? 5 : 1,
+      style: const TextStyle(color: Colors.white),
+      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+        prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.6)),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF7BB960)),
         ),
       ),
     );
   }
-
-  String titleKeyForDestination(int destinationIndex) {
-    if (destinationIndex == 1) {
-      return 'shop_inputs';
-    }
-    if (destinationIndex == 2) {
-      return 'my_cart';
-    }
-    if (destinationIndex == 3) {
-      return 'profile_short';
-    }
-    if (destinationIndex == 4) {
-      return 'order_history';
-    }
-    return 'crop_feed';
-  }
-
-  String subtitleKeyForDestination(int destinationIndex) {
-    if (destinationIndex == 1) {
-      return 'shop_inputs_subtitle';
-    }
-    if (destinationIndex == 2) {
-      return 'my_cart_subtitle';
-    }
-    if (destinationIndex == 3) {
-      return 'profile_short_subtitle';
-    }
-    if (destinationIndex == 4) {
-      return 'order_history_subtitle';
-    }
-    return 'crop_feed_subtitle';
-  }
 }
 
-class _InsightCard extends StatelessWidget {
-  final _InsightCardData insight;
-
-  const _InsightCard({required this.insight});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final titleKey = titleKeyForInsight(insight.icon);
-    final subtitleKey = subtitleKeyForInsight(insight.icon);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: insight.tint,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 44,
-            width: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(insight.icon, color: const Color(0xFF214B2D)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.text(titleKey),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF183020),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  l10n.text(subtitleKey),
-                  style: TextStyle(
-                    color: Colors.grey.shade800,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String titleKeyForInsight(IconData icon) {
-    if (icon == Icons.eco_outlined) {
-      return 'field_ready_guidance';
-    }
-    if (icon == Icons.bolt_outlined) {
-      return 'faster_buying_decisions';
-    }
-    return 'farmer_first_experience';
-  }
-
-  String subtitleKeyForInsight(IconData icon) {
-    if (icon == Icons.eco_outlined) {
-      return 'field_ready_guidance_subtitle';
-    }
-    if (icon == Icons.bolt_outlined) {
-      return 'faster_buying_decisions_subtitle';
-    }
-    return 'farmer_first_experience_subtitle';
-  }
-}
-
-class _QuickModule {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final int destinationIndex;
-
-  const _QuickModule({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.destinationIndex,
-  });
-}
-
-class _InsightCardData {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color tint;
-
-  const _InsightCardData({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.tint,
-  });
-}

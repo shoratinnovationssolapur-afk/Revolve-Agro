@@ -18,7 +18,7 @@ class AdminDashboardPage extends StatefulWidget {
 class _AdminDashboardPageState extends State<AdminDashboardPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  final List<_DashboardItem> _items = const [
+  final List<_DashboardItem> _items = [
     _DashboardItem(
       label: 'View Orders',
       subtitle: 'Track and approve orders',

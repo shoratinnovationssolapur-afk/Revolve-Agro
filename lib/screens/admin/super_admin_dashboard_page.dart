@@ -20,7 +20,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  final List<_DashboardItem> _items = const [
+  final List<_DashboardItem> _items = [
     _DashboardItem(
       label: 'Manage Admins',
       subtitle: 'Add and control admins',
