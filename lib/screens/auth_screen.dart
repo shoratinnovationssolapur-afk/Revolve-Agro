@@ -400,7 +400,7 @@ class _AuthScreenState extends State<AuthScreen>
                                           ? l10n.text('super_admin_workspace')
                                           : isAdmin
                                               ? l10n.text('admin_workspace')
-                                              : l10n.text('farmer_workspace'),
+                                              : l10n.text('user_workspace'),
                                       style: TextStyle(
                                         color: accent,
                                         fontWeight: FontWeight.w800,
@@ -470,7 +470,7 @@ class _AuthScreenState extends State<AuthScreen>
                                                     ? l10n.text(
                                                         'admin_workspace')
                                                     : l10n.text(
-                                                        'farmer_workspace'),
+                                                        'user_workspace'),
                                             style: TextStyle(
                                               color: accent,
                                               fontWeight: FontWeight.w800,
@@ -484,8 +484,7 @@ class _AuthScreenState extends State<AuthScreen>
                                             child: Text(
                                               isLogin
                                                   ? l10n.text('welcome_back')
-                                                  : l10n.text(
-                                                      'create_your_account'),
+                                                  : l10n.text('create_your_account'),
                                               key: ValueKey(isLogin),
                                               style: const TextStyle(
                                                 fontSize: 24,

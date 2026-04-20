@@ -56,6 +56,7 @@ class AppLocalizations {
       'startup_hint': 'We are preparing your account, products, and settings in the background.',
       'admin_workspace': 'Admin Workspace',
       'farmer_workspace': 'Farmer Workspace',
+      'user_workspace': 'User Workspace',
       'welcome_back': 'Welcome back',
       'create_your_account': 'Create your account',
       'login': 'Login',
