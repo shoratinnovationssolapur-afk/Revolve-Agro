@@ -1,12 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui';
 
 import '../app_localizations.dart';
 import '../services/inquiry_service.dart';
-
-
 import '../widgets/app_shell.dart';
 
 class QueryFormPage extends StatefulWidget {
@@ -65,13 +62,8 @@ class _QueryFormPageState extends State<QueryFormPage> with TickerProviderStateM
     if (_submitting || !(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _submitting = true);
     try {
-     await InquiryService.submit(
-  name: _name.text.trim(),
-  email: _email.text.trim(),
-  phone: _phone,
-  subject: _subject.text.trim(),
-  message: _message.text.trim(),
-);
+      await InquiryService.submit(name: _name.text, email: _email.text, phone: _phone, subject: _subject.text, message: _message.text);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.text('query_sent'))));
         Navigator.pop(context);
       }
@@ -86,6 +78,8 @@ class _QueryFormPageState extends State<QueryFormPage> with TickerProviderStateM
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AppShell(
+      backgroundImage: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=2070&auto=format&fit=crop',
+      overlayOpacity: 0.5,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
@@ -102,6 +96,7 @@ class _QueryFormPageState extends State<QueryFormPage> with TickerProviderStateM
                   Text('We are here to help you grow', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16)),
                   const SizedBox(height: 40),
                   AppGlassCard(
+                    color: Colors.white.withOpacity(0.15),
                     child: Form(
                       key: _formKey,
                       child: Column(

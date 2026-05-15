@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'user_dashboard.dart';
-import 'admin/super_admin_dashboard_page.dart';
 import 'vendor_dashboard.dart';
+import 'admin/super_admin_dashboard_page.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -21,78 +21,84 @@ class _AuthScreenState extends State<AuthScreen> {
   final password = TextEditingController();
   final name = TextEditingController();
 
-  String role = 'User';
+  String role = 'User'; // used only for signup
 
   Future<void> handleAuth() async {
+    if (email.text.trim().isEmpty || password.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enter email & password")),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
       if (isLogin) {
-        // 🔥 LOGIN
-        final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        // ✅ LOGIN
+        final cred = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
           email: email.text.trim(),
           password: password.text.trim(),
         );
 
-        final userDoc = await FirebaseFirestore.instance
+        final doc = await FirebaseFirestore.instance
             .collection('users')
             .doc(cred.user!.uid)
             .get();
 
-        if (!userDoc.exists) {
+        if (!doc.exists) {
+          await FirebaseAuth.instance.signOut();
           throw Exception("User data not found");
         }
 
-        final userRole = userDoc.data()?['role'] ?? 'User';
+        final userRole = doc.data()?['role'] ?? 'User';
 
-        // ✅ USER
-        if (userRole == 'User') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const UserDashboard()),
-          );
-        }
-        // ✅ VENDOR (NO APPROVAL / NO ONBOARDING)
-        else if (userRole == 'Vendor') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const VendorDashboard()),
-          );
-        }
-        // ✅ SUPER ADMIN
-        else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const SuperAdminDashboardPage()),
-          );
+        if (!mounted) return;
+
+        // ✅ ROLE BASED NAVIGATION
+        switch (userRole) {
+          case 'Vendor':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const VendorDashboard()),
+            );
+            break;
+
+          case 'SuperAdmin':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const SuperAdminDashboardPage()),
+            );
+            break;
+
+          default:
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const UserDashboard()),
+            );
         }
       } else {
-        // 🔥 REGISTER
+        // ✅ SIGNUP
 
-        // ❌ Block SuperAdmin creation
-        if (role == 'SuperAdmin') {
-          throw Exception("SuperAdmin cannot be created");
+        if (name.text.trim().isEmpty) {
+          throw Exception("Enter name");
         }
 
-        // 🔥 Check if SuperAdmin exists
-        if (role == 'SuperAdmin') {
-  throw Exception("SuperAdmin cannot be created");
-}
-
-        // ✅ Create user
-        final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        final cred = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
           email: email.text.trim(),
           password: password.text.trim(),
         );
 
-        // ✅ Save user in Firestore
         await FirebaseFirestore.instance
             .collection('users')
             .doc(cred.user!.uid)
             .set({
           'name': name.text.trim(),
           'email': email.text.trim(),
-          'role': role,
+          'role': role, // User or Vendor only
           'createdAt': FieldValue.serverTimestamp(),
         });
 
@@ -108,7 +114,7 @@ class _AuthScreenState extends State<AuthScreen> {
       );
     }
 
-    setState(() => isLoading = false);
+    if (mounted) setState(() => isLoading = false);
   }
 
   Widget field(String label, TextEditingController c,
@@ -195,16 +201,10 @@ class _AuthScreenState extends State<AuthScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        backgroundColor: Colors.green,
-                      ),
                       onPressed: isLoading ? null : handleAuth,
                       child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const CircularProgressIndicator(
+                              color: Colors.white)
                           : Text(isLogin ? "Login" : "Register"),
                     ),
                   ),
@@ -226,4 +226,3 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 }
-

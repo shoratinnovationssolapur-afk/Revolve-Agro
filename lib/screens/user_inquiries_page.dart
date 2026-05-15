@@ -3,31 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../app_localizations.dart';
-
 import '../widgets/app_shell.dart';
-
-class InquiryService {
-  static Future<void> submit({
-    required String name,
-    required String email,
-    required String phone,
-    required String subject,
-    required String message,
-  }) async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    await FirebaseFirestore.instance.collection('inquiries').add({
-      'userId': user?.uid,
-      'name': name,
-      'email': email,
-      'phone': phone,
-      'subject': subject,
-      'message': message,
-      'status': 'new',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-  }
-}
 
 class UserInquiriesPage extends StatelessWidget {
   const UserInquiriesPage({super.key});
@@ -38,6 +14,8 @@ class UserInquiriesPage extends StatelessWidget {
     final l10n = context.l10n;
 
     return AppShell(
+      backgroundImage: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2064&auto=format&fit=crop',
+      overlayOpacity: 0.5,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -114,10 +92,10 @@ class UserInquiriesPage extends StatelessWidget {
                       final message = data['message'] ?? '';
                       final date = (data['createdAt'] as Timestamp?)?.toDate();
 
-                      return Container(
+                      return AppGlassCard(
                         margin: const EdgeInsets.only(bottom: 16),
-                        child: AppGlassCard(
-                          child: Column(
+                        color: Colors.white.withOpacity(0.12),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
@@ -143,7 +121,6 @@ class UserInquiriesPage extends StatelessWidget {
                             const SizedBox(height: 6),
                             Text(message, style: TextStyle(color: Colors.white.withOpacity(0.7), height: 1.4)),
                           ],
-                        ),
                         ),
                       );
                     },
