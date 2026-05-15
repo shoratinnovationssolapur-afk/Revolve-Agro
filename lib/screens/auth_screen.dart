@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'user_dashboard.dart';
 import 'vendor_dashboard.dart';
+import 'admin/admin_dashboard_page.dart';
 import 'admin/super_admin_dashboard_page.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -52,20 +53,30 @@ class _AuthScreenState extends State<AuthScreen> {
           throw Exception("User data not found");
         }
 
-        final userRole = doc.data()?['role'] ?? 'User';
+        final userRole =
+            (doc.data()?['role'] ?? 'User').toString().trim().toLowerCase();
 
         if (!mounted) return;
 
         // ✅ ROLE BASED NAVIGATION
         switch (userRole) {
-          case 'Vendor':
+          case 'vendor':
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const VendorDashboard()),
             );
             break;
 
-          case 'SuperAdmin':
+          case 'admin':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+            );
+            break;
+
+          case 'superadmin':
+          case 'super_admin':
+          case 'super admin':
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(

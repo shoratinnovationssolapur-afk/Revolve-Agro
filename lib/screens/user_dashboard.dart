@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'dart:ui';
 
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
@@ -12,10 +11,8 @@ import '../widgets/language_selector.dart';
 import '../utils/helpline.dart';
 import 'full_screen_viewer.dart';
 import 'order_history_page.dart';
-import 'payment_page.dart';
 import 'product_list.dart';
 import 'profile_page.dart';
-import 'auth_screen.dart';
 import 'user_gallery_screen.dart';
 import 'query_form_page.dart';
 import 'user_inquiries_page.dart'; // Added import

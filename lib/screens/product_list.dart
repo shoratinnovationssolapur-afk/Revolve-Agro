@@ -1,16 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui';
 
 import '../app_localizations.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/language_selector.dart';
-import 'auth_screen.dart';
-import 'payment_page.dart';
-import 'profile_page.dart';
 import 'product_details_page.dart';
-import 'welcome_screen.dart';
 import 'user_gallery_screen.dart';
 
 class Product {
